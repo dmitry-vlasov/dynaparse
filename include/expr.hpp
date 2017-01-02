@@ -50,7 +50,7 @@ struct Expr {
 template<class T>
 struct Tree {
 	map<Rule*, vector<Tree<T>>> rules;
-	map<const rus::Expr*, const Symbol*> entries;
+	map<const dynaparse::Expr*, const Symbol*> entries;
 };
 
 }

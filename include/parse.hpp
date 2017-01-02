@@ -1,4 +1,5 @@
 #include "expr.hpp"
+#include "dynaparse.hpp"
 
 namespace dynaparse {
 
@@ -95,23 +96,23 @@ void parse_LL(Expr* ex, uint ind) {
 	(--ex->symbols.end())->end = true;
 	//cout << "parsing: " << ind << " -- " << show(*ex) << flush;
 	if (parse_LL(ex->term, ex->symbols.begin(), ex->type, ind) == Symbols::iterator()) {
-		throw Error("parsing error", string("expression: ") + show(*ex));
+		//throw Error("parsing error", string("expression: ") + show(*ex));
 	}
 	//cout << "done" << endl;
 }
 
 
-
+/*
 const uint THREADS = thread::hardware_concurrency() ? thread::hardware_concurrency() : 1;
 vector<std::exception_ptr> exceptions;
 mutex exc_mutex;
-
+*/
 void parse_LL_sequent() {
 	for (auto p : queue) {
 		parse_LL(p.first, p.second);
 	}
 }
-
+/*
 void parse_LL_concurrent(uint s) {
 	int c = 0;
 	for (auto p : queue) {
@@ -128,12 +129,12 @@ void parse_LL_concurrent(uint s) {
 		}
 	}
 }
-
+*/
 bool parse_LL() {
-	if (THREADS == 1) {
+	//if (THREADS == 1) {
 		parse_LL_sequent();
 		return true;
-	}
+	/*}
 	thread* thds[THREADS];
 	for (uint i = 0; i < THREADS; ++ i)
 		thds[i] = new std::thread(parse_LL_concurrent, i);
@@ -142,11 +143,11 @@ bool parse_LL() {
 	for (auto& ex : exceptions) {
 		if (ex) std::rethrow_exception(ex);
 	}
-	return true;
+	return true;*/
 }
 
 void enqueue(Expr& ex) {
-	queue.push_back(pair<Expr*, uint>(&ex, parser::get_ind()));
+	queue.push_back(pair<Expr*, uint>(&ex, Table::get().ind));
 }
 
 bool parse() {

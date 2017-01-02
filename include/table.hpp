@@ -1,38 +1,14 @@
 #pragma once
-#include <string>
-#include <map>
-#include <vector>
+#include "std.hpp"
 
 namespace dynaparse {
-
-using std::string;
-using std::map;
-using std::vector;
-
-typedef std::uint32_t uint;
-
-#define UNDEF_UINT 0xFFFFFFFF
-#define UNDEF_LIT  0x0FFFFFFF
-
-template<class T> struct Undef;
-template<> struct Undef<uint> {
-	static uint get()        { return UNDEF_UINT; }
-	static bool is(uint x)   { return x == UNDEF_UINT; }
-	static void set(uint& x) { x = UNDEF_UINT; }
-};
-
-template<class T> struct Undef<T*> {
-	static T*   get()      { return nullptr; }
-	static bool is(T* x)   { return x == nullptr; }
-	static void set(T*& x) { x = nullptr;  }
-};
 
 struct Table {
 	typedef std::map<string, uint> Table_;
 	typedef std::vector<string> Strings_;
 
-	const Table& get() { return mod(); }
-	Table& mod() { Table table; return table; }
+	static const Table& get() { return mod(); }
+	static Table& mod() { static Table table; return table; }
 
 	uint getInt(const string& str) const {
 		if (table.find(str) == table.end())
@@ -57,9 +33,10 @@ struct Table {
 	}
 	Strings_ strings;
 	Table_   table;
+	int      ind;
 
 private:
-	Table() : strings(), table() { }
+	Table() : strings(), table(), ind(0) { }
 };
 
 class indent {

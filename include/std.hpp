@@ -2,6 +2,8 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <stack>
+#include <utility>
 #include <iostream>
 #include <unistd.h>
 #include <stdint.h>
@@ -13,6 +15,8 @@ using std::string;
 using std::map;
 using std::vector;
 using std::ostream;
+using std::pair;
+using std::stack;
 
 typedef uint32_t uint;
 
