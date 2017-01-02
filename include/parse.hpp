@@ -90,14 +90,4 @@ Symbols::iterator parse_LL(Expr& t, Symbols::iterator x, Type* type, uint ind, b
 	return Symbols::iterator();
 }
 
-
-void parse_LL(const Symbols* ex, uint ind) {
-	/*(--ex->symbols.end())->end = true;
-	//cout << "parsing: " << ind << " -- " << show(*ex) << flush;
-	if (parse_LL(ex->term, ex->symbols.begin(), ex->type, ind) == Symbols::iterator()) {
-		//throw Error("parsing error", string("expression: ") + show(*ex));
-	}*/
-	//cout << "done" << endl;
-}
-
 }

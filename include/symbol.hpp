@@ -53,15 +53,6 @@ struct Symbol : public Literal {
 			type < s.type;
 	}
 	Type* type;
-	/*struct Hash {
-		typedef size_t result_type;
-		typedef Symbol argument_type;
-		size_t operator() (Symbol s) const {
-			return hash(s.lit);
-		}
-	private:
-		static std::hash<uint> hash;
-	};*/
 };
 
 typedef vector<Symbol> Symbols;
