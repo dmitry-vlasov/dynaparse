@@ -4,25 +4,7 @@
 
 namespace dynaparse {
 
-typedef vector<Symbol> Symbols;
-
-string show(Symbol s, bool full = false);
-
-inline ostream& operator << (ostream& os, Symbol s) {
-	os << show(s);
-	return os;
-}
-
 struct Rule;
-struct Expr;
-
-namespace node {
-	template<class>
-	struct PTree;
-}
-
-namespace term {
-
 struct Expr {
 	typedef vector<Expr> Children;
 	enum Kind { NODE, VAR };
@@ -50,20 +32,13 @@ struct Expr {
 template<class T>
 struct Tree {
 	map<Rule*, vector<Tree<T>>> rules;
-	map<const dynaparse::Expr*, const Symbol*> entries;
-};
-
-}
-
-struct Substitution {
-	bool join(Substitution* s);
-	map<Symbol, term::Expr> sub;
+	map<const Symbols*, const Symbol*> entries;
 };
 
 struct Rules {
 	struct Node;
 	typedef vector<Node> Map;
-	Rule*& add(const Expr& ex);
+	Rule*& add(const Symbols& ex);
 	Map map;
 };
 
@@ -77,112 +52,25 @@ struct Rules::Node {
 
 string show(const Rules& tr);
 
-
-struct Expr {
-	typedef term::Expr Term;
-
-	Expr() : type(nullptr), term(), symbols() { }
-	Expr(Symbol s) : type(s.type), term(), symbols() {
-		symbols.push_back(s);
-	}
-	void push_back(Symbol s) {
-		symbols.push_back(s);
-	}
-	void push_front(Symbol s) {
-		symbols.insert(symbols.begin(), s);
-	}
-	Symbol pop_back() {
-		Symbol s = symbols.back();
-		symbols.pop_back();
-		return s;
-	}
-	bool operator == (const Expr& ex) const {
-		return (type == ex.type) && (symbols == ex.symbols);
-	}
-	bool operator != (const Expr& ex) const {
-		return !operator == (ex);
-	}
-
-	Type*   type;
-	Term    term;
-	Symbols symbols;
-};
-
-Substitution* unify(const term::Expr& p, const term::Expr& q);
-inline Substitution* unify(const Expr& ex1, const Expr& ex2) {
-	return unify(ex1.term, ex2.term);
-}
-Expr assemble(const Expr& ex);
-Expr assemble(const term::Expr* t);
-
-namespace expr {
-	void enqueue(Expr& ex);
-	bool parse();
-}
-
-string show(const Expr&);
-string show_ast(const term::Expr&, bool full = false);
-inline string show_ast(const Expr& ex, bool full = false) {
-	return show_ast(ex.term, full);
-}
-
-string show(const term::Expr& t, bool full = false);
-
-
-inline string show(const Substitution& s) {
-	string str;
-	for (auto p : s.sub) {
-		str += show(p.first, true) + " --> " + show_ast(p.second) + "\t ==\t"  + show(p.second) + "\n";
-	}
-	return str;
-}
-
-inline ostream& operator << (ostream& os, const Expr& ex) {
-	os << show(ex);
-	return os;
-}
-
 template<class T>
-void add_term(term::Tree<T>& tree_m, const term::Expr& expr_t, map<const Symbol*, const Symbol*>& mp, const Expr* ex) {
-	if (expr_t.kind == term::Expr::VAR) {
+void add_term(Tree<T>& tree_m, const Expr& expr_t, map<const Symbol*, const Symbol*>& mp, const Symbols* ex) {
+	if (expr_t.kind == Expr::VAR) {
 		tree_m.entries[ex] = mp[expr_t.val.var];
 		return;
 	}
 	if (!tree_m.rules.has(expr_t.val.rule)) {
-		vector<term::Tree<T>>& tree_t = tree_m.rules[expr_t.val.rule];
+		vector<Tree<T>>& tree_t = tree_m.rules[expr_t.val.rule];
 		for_each(
 			expr_t.children.begin(),
 			expr_t.children.end(),
-			[&tree_t](auto) mutable { tree_t.push_back(term::Tree<T>()); }
+			[&tree_t](auto) mutable { tree_t.push_back(Tree<T>()); }
 		);
 	}
-	vector<term::Tree<T>>& tree_t = tree_m.rules[expr_t.val.rule];
+	vector<Tree<T>>& tree_t = tree_m.rules[expr_t.val.rule];
 	auto tree_ch = tree_t.begin();
 	for (auto& expr_ch : expr_t.children) {
 		add_term(*tree_ch ++, expr_ch, mp, ex);
 	}
 }
-
-void dump(const Symbol& s);
-void dump(const Expr& ex);
-void dump_ast(const Expr& ex);
-void dump(const term::Expr* tm);
-void dump_ast(const term::Expr* tm);
-void dump(const Substitution& sb);
-
-
-inline size_t memvol(const Symbol& s) {
-	return 0;
-}
-inline size_t memvol(const term::Expr& t) {
-	size_t vol = 0;
-	vol += t.children.capacity();
-	for (const term::Expr ch : t.children)
-		vol += memvol(ch);
-	return vol;
-}
-
-size_t memvol(const Expr& ex);
-size_t memvol(const Rules&);
 
 } // mdl::rus

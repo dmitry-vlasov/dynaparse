@@ -64,4 +64,6 @@ struct Symbol : public Literal {
 	};*/
 };
 
+typedef vector<Symbol> Symbols;
+
 }

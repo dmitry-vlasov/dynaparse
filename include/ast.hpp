@@ -3,25 +3,6 @@
 
 namespace dynaparse {
 
-void parse_expr(Expr& ex);
-void parse_term(Expr& ex, Rule* rule);
-/*
-struct Rules {
-	struct Node;
-	typedef vector<Node> Map;
-	Rule*& add(const Expr& ex);
-	Map map;
-};
-
-struct Rules::Node {
-	Node(Symbol s) : symb(s), tree(), level(), rule(nullptr) { }
-	Symbol symb;
-	Rules  tree;
-	uint   level;
-	Rule*  rule;
-};
-*/
-
 struct Type {
 	~Type();
 	uint ind;
@@ -40,7 +21,7 @@ struct Rule {
 	uint  id;
 	Type* type;
 	Vars  vars;
-	Expr  term;
+	Symbols term;
 };
 
 inline Type::~Type() {

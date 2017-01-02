@@ -3,9 +3,7 @@
 
 namespace dynaparse {
 
-typedef term::Expr Term;
 typedef Rules::Map::const_iterator MapIter;
-vector<pair<Expr*, uint>> queue;
 
 inline Rule* find_super(Type* type, Type* super) {
 	auto it =type->supers.find(super);
@@ -17,7 +15,7 @@ inline Rule* find_super(Type* type, Type* super) {
 
 enum class Action { RET, BREAK, CONT };
 
-inline Action act(stack<MapIter>& n, stack<Symbols::iterator>& m, Symbols::iterator ch, Term& t, uint ind) {
+inline Action act(stack<MapIter>& n, stack<Symbols::iterator>& m, Symbols::iterator ch, Expr& t, uint ind) {
 	if (Rule* r = n.top()->rule) {
 		if (r->ind <= ind) {
 			t.val.rule = r;
@@ -33,9 +31,9 @@ inline Action act(stack<MapIter>& n, stack<Symbols::iterator>& m, Symbols::itera
 	return Action::CONT;
 }
 
-Symbols::iterator parse_LL(Term& t, Symbols::iterator x, Type* type, uint ind, bool initial = false) {
+Symbols::iterator parse_LL(Expr& t, Symbols::iterator x, Type* type, uint ind, bool initial = false) {
 	if (!initial && type->rules.map.size()) {
-		t.kind = term::Expr::NODE;
+		t.kind = Expr::NODE;
 
 
 		stack<MapIter> n;
@@ -45,9 +43,9 @@ Symbols::iterator parse_LL(Term& t, Symbols::iterator x, Type* type, uint ind, b
 		m.push(x);
 		while (!n.empty() && !m.empty()) {
 			if (Type* tp = n.top()->symb.type) {
-				t.children.push_back(Term());
+				t.children.push_back(Expr());
 				childnodes.push(n.top());
-				Term& child = t.children.back();
+				Expr& child = t.children.back();
 				auto ch = parse_LL(child, m.top(), tp, ind, n.top() == type->rules.map.begin());
 				if (ch != Symbols::iterator()) {
 					switch (act(n, m, ch, t, ind)) {
@@ -81,11 +79,11 @@ Symbols::iterator parse_LL(Term& t, Symbols::iterator x, Type* type, uint ind, b
 	}
 	if (x->type) {
 		if (x->type == type) {
-			t = Term(*x);
+			t = Expr(*x);
 			return x;
 		} else if (Rule* super = find_super(x->type, type)) {
-			t = Term(super);
-			t.children.push_back(Term(*x));
+			t = Expr(super);
+			t.children.push_back(Expr(*x));
 			return x;
 		}
 	}
@@ -93,70 +91,13 @@ Symbols::iterator parse_LL(Term& t, Symbols::iterator x, Type* type, uint ind, b
 }
 
 
-void parse_LL(Expr* ex, uint ind) {
-	(--ex->symbols.end())->end = true;
+void parse_LL(const Symbols* ex, uint ind) {
+	/*(--ex->symbols.end())->end = true;
 	//cout << "parsing: " << ind << " -- " << show(*ex) << flush;
 	if (parse_LL(ex->term, ex->symbols.begin(), ex->type, ind) == Symbols::iterator()) {
 		//throw Error("parsing error", string("expression: ") + show(*ex));
-	}
+	}*/
 	//cout << "done" << endl;
-}
-
-
-/*
-const uint THREADS = thread::hardware_concurrency() ? thread::hardware_concurrency() : 1;
-vector<std::exception_ptr> exceptions;
-mutex exc_mutex;
-*/
-void parse_LL_sequent() {
-	for (auto p : queue) {
-		parse_LL(p.first, p.second);
-	}
-}
-/*
-void parse_LL_concurrent(uint s) {
-	int c = 0;
-	for (auto p : queue) {
-		if (c++ % THREADS != s)
-			continue;
-		if (exceptions.size())
-			break;
-		try {
-			parse_LL(p.first, p.second);
-		} catch (...) {
-			exc_mutex.lock();
-			exceptions.push_back(std::current_exception());
-			exc_mutex.unlock();
-		}
-	}
-}
-*/
-bool parse_LL() {
-	//if (THREADS == 1) {
-		parse_LL_sequent();
-		return true;
-	/*}
-	thread* thds[THREADS];
-	for (uint i = 0; i < THREADS; ++ i)
-		thds[i] = new std::thread(parse_LL_concurrent, i);
-	for (uint i = 0; i < THREADS; ++ i)
-		thds[i]->join();
-	for (auto& ex : exceptions) {
-		if (ex) std::rethrow_exception(ex);
-	}
-	return true;*/
-}
-
-void enqueue(Expr& ex) {
-	queue.push_back(pair<Expr*, uint>(&ex, Table::get().ind));
-}
-
-bool parse() {
-	if (parse_LL()) {
-		queue.clear();
-		return true;
-	} else
-		return false;
 }
 
 }
