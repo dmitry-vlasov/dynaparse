@@ -1,9 +1,7 @@
 #pragma once
-#include <symbol.hpp>
+#include <expr.hpp>
 
 namespace dynaparse {
-
-struct Rule;
 
 void parse_expr(Expr& ex);
 void parse_term(Expr& ex, Rule* rule);
