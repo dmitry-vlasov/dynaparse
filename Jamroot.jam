@@ -1,0 +1,17 @@
+project dynaparse
+	: requirements 	
+		<include>include <include>src 
+		<toolset>gcc:<cxxflags>-std=gnu++14
+		<toolset>gcc:<linkflags>-lpthread 
+		<toolset>gcc:<linkflags>-lboost_system
+		<toolset>gcc:<linkflags>-lboost_filesystem
+		<toolset>gcc:<linkflags>-lboost_program_options
+		<toolset>gcc:<c++-template-depth>300
+		<variant>release:<location>"../bin/release"
+		<variant>debug:<location>"../bin/debug"
+	;
+	
+exe dp : 
+  main.cpp
+  ;
+
