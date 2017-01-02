@@ -4,6 +4,7 @@
 namespace dynaparse {
 
 typedef term::Expr Term;
+typedef Rules::Map::const_iterator MapIter;
 vector<pair<Expr*, uint>> queue;
 
 inline Rule* find_super(Type* type, Type* super) {
@@ -16,7 +17,7 @@ inline Rule* find_super(Type* type, Type* super) {
 
 enum class Action { RET, BREAK, CONT };
 
-inline Action act(auto& n, auto& m, Symbols::iterator ch, Term& t, uint ind) {
+inline Action act(stack<MapIter>& n, stack<Symbols::iterator>& m, Symbols::iterator ch, Term& t, uint ind) {
 	if (Rule* r = n.top()->rule) {
 		if (r->ind <= ind) {
 			t.val.rule = r;
@@ -35,7 +36,7 @@ inline Action act(auto& n, auto& m, Symbols::iterator ch, Term& t, uint ind) {
 Symbols::iterator parse_LL(Term& t, Symbols::iterator x, Type* type, uint ind, bool initial = false) {
 	if (!initial && type->rules.map.size()) {
 		t.kind = term::Expr::NODE;
-		typedef Rules::Map::const_iterator MapIter;
+
 
 		stack<MapIter> n;
 		stack<Symbols::iterator> m;
