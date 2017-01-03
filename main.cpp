@@ -18,7 +18,7 @@ int main(int argc, const char* argv[]) {
 	test_grammar(gr);
 	Parser p(gr);
 	Expr ex;
-	p.parse("(a+(b*a))", ex, "exp");
+	p.parse("(a+b)", ex, "exp");
 	std::cout << ex << std::endl;
 	return 0;
 }

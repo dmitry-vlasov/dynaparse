@@ -67,6 +67,7 @@ private :
 
 inline Tree::Node Parser::createNode(Symb& s){
 	Tree::Node n;
+	n.symb.body = s.first;
 	n.rule = nullptr;
 	n.symb.type = nullptr;
 	s.second = true;
@@ -121,7 +122,7 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end,
 			return Action::RET;
 		//} else
 		//	return Action::BREAK;
-	} else if (ch == end)
+	} else if (ch + 1 == end)
 		return Action::BREAK;
 	else {
 		n.push(n.top()->tree.map.begin());
@@ -190,7 +191,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, ExtType* type, uint ind
 
 inline void Parser::parse(const string& src, Expr& expr, const string& type) {
 	StrIter it = parse_LL(expr, src.begin(), src.end(), &types[type], 0);
-	if (it != src.end()) {
+	if (it + 1 != src.end()) {
 		std::cout << "FUCK" << std::endl;
 	}
 }
