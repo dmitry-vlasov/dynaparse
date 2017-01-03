@@ -1,5 +1,5 @@
 #pragma once
-#include "table.hpp"
+#include "stuff/table.hpp"
 
 namespace dynaparse {
 

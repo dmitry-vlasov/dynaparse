@@ -1,5 +1,5 @@
-#include "ast.hpp"
-#include "expr.hpp"
+#include "stuff/ast.hpp"
+#include "stuff/expr.hpp"
 
 namespace dynaparse {
 

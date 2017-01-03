@@ -1,6 +1,6 @@
 #pragma once
 
-#include "symbol.hpp"
+#include "stuff/symbol.hpp"
 
 namespace dynaparse {
 
