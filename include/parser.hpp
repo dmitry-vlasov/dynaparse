@@ -189,7 +189,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, ExtType* type, uint ind
 }
 
 inline void Parser::parse(const string& src, Expr& expr, const string& type) {
-	StrIter it = parse_LL(expr, src.begin(), src.end(), &types[type], 0, true);
+	StrIter it = parse_LL(expr, src.begin(), src.end(), &types[type], 0);
 	if (it != src.end()) {
 		std::cout << "FUCK" << std::endl;
 	}
