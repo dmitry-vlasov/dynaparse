@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <map>
+#include <set>
 #include <vector>
 #include <stack>
 #include <utility>
@@ -18,6 +19,7 @@ using std::vector;
 using std::ostream;
 using std::pair;
 using std::stack;
+using std::set;
 
 typedef uint32_t uint;
 

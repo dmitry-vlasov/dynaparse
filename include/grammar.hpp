@@ -5,23 +5,19 @@
 namespace dynaparse {
 namespace xxx {
 
-struct Symb {
-	static Symb T(const string& c) { return Symb {c, false}; }
-	static Symb N(const string& c) { return Symb {c, true}; }
-	string body;
-	bool is_term;
-	bool operator == (const Symb& s) const { return body == s.body && is_term == s.is_term; }
-	bool operator != (const Symb& s) const { return !operator == (s); }
-};
-
-typedef vector<Symb> Symbs;
+typedef pair<string, bool> Symb;
 
 struct Rule {
-	string name;
-	Symb   left;
-	Symbs  right;
-	Rule& operator << (const Symb& s) { right.push_back(s); return *this; }
+	string left;
+	vector<Symb> right;
+	Rule& operator << (const string& s) { right.push_back(Symb(s, false)); return *this; }
 };
+
+inline Rule& operator << (const string& s, Rule&& r) {
+	r.right.clear();
+	r.left = s;
+	return r;
+}
 
 struct Type {
 	string name;
@@ -34,7 +30,23 @@ struct Expr {
 	Expr(const Rule* r) : rule(r), children() { }
 	const Rule*  rule;
 	vector<Expr> children;
+	string show() const {
+		string ret;
+		int i = 0;
+		for (auto& p : rule->right) {
+			if (p.second) {
+				ret += p.first;
+			} else {
+				ret += children[i ++].show();
+			}
+		}
+		return ret;
+	}
 };
+
+ostream& operator << (ostream& os, const Expr& ex) {
+	os << ex.show(); return os;
+}
 
 struct Grammar {
 	vector<Type> types;
@@ -42,12 +54,5 @@ struct Grammar {
 	Grammar& operator << (const Rule& rule) { rules.push_back(rule); return *this; }
 	Grammar& operator << (const Type& type) { types.push_back(type); return *this; }
 };
-
-void russell_grammar(Grammar& rus) {
-	Type tp;
-	Rule rul {"rule name" };
-	rul << Symb::T("{") << Symb::N("N") << Symb::T("}");
-	rus << tp;
-}
 
 }}

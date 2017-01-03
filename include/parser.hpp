@@ -16,14 +16,13 @@ struct ExtType;
 typedef string::const_iterator StrIter;
 
 struct ExtSymb {
-	bool is_term;
-	bool is_fin;
+	bool     is_fin;
 	ExtType* type;
 	string   body;
-	bool operator == (const Symb& s) const { return is_term == s.is_term && body == s.body; }
-	bool operator != (const Symb& s) const { return !operator == (s); }
+	bool operator == (const string& s) const { return body == s; }
+	bool operator != (const string& s) const { return !operator == (s); }
 	bool matches(StrIter ch, StrIter end) const {
-		assert(is_term);
+		assert(!type);
 		StrIter x = body.begin();
 		for (; x != body.end() && ch != end; ++x, ++ch) {
 			if (*x != *ch) return false;
@@ -33,10 +32,10 @@ struct ExtSymb {
 };
 
 struct Tree::Node {
-	ExtSymb symb;
-	Tree    tree;
-	uint    level;
-	Rule*   rule;
+	ExtSymb  symb;
+	Tree  tree;
+	uint  level;
+	Rule* rule;
 };
 
 struct ExtType {
@@ -52,7 +51,7 @@ public :
 			types[type.name].type = &type;
 		}
 		for (Rule& rule : grammar.rules) {
-			ExtType& type = types[rule.left.body];
+			ExtType& type = types[rule.left];
 			Tree::Node* n = add(type.tree, rule.right);
 			n->rule = &rule;
 		}
@@ -60,33 +59,32 @@ public :
 	void parse(const string& src, Expr& expr, const string& type);
 
 private :
-	Tree::Node createNode(Symb s);
-	Tree::Node* add(Tree& tree, const Symbs& ex);
+	Tree::Node createNode(Symb& s);
+	Tree::Node* add(Tree& tree, vector<Symb>& ex);
 	Grammar& grammar;
 	map<string, ExtType> types;
 };
 
-inline Tree::Node Parser::createNode(Symb s){
+inline Tree::Node Parser::createNode(Symb& s){
 	Tree::Node n;
 	n.rule = nullptr;
-	if (s.is_term) {
-		n.symb.is_term = true;
-		n.symb.body = s.body;
-	} else {
-		n.symb.is_term = false;
-		n.symb.type = &types[s.body];
+	n.symb.type = nullptr;
+	s.second = true;
+	if (types.count(s.first)) {
+		n.symb.type = &types[s.first];
+		s.second = false;
 	}
 	return n;
 }
 
-inline Tree::Node* Parser::add(Tree& tree, const Symbs& ex) {
+inline Tree::Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 	assert(ex.size());
 	Tree* m = &tree;
 	Tree::Node* n = nullptr;
-	for (const Symb& s : ex) {
+	for (auto& x : ex) {
 		bool new_symb = true;
 		for (Tree::Node& p : m->map) {
-			if (p.symb == s) {
+			if (p.symb == x.first) {
 				n = &p;
 				m = &p.tree;
 				new_symb = false;
@@ -95,7 +93,7 @@ inline Tree::Node* Parser::add(Tree& tree, const Symbs& ex) {
 		}
 		if (new_symb) {
 			if (m->map.size()) m->map.back().symb.is_fin = false;
-			m->map.push_back(createNode(s));
+			m->map.push_back(createNode(x));
 			n = &m->map.back();
 			n->symb.is_fin = true;
 			m = &n->tree;
