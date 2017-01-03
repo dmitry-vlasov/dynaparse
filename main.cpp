@@ -1,4 +1,5 @@
 #include "parse.hpp"
+#include "parser.hpp"
 
 using namespace dynaparse;
 

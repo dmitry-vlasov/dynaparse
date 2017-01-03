@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <algorithm>
+#include <cassert>
 
 namespace dynaparse {
 
