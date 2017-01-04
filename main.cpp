@@ -15,9 +15,10 @@ void test_grammar(Grammar& gr) {
 int main(int argc, const char* argv[]) {
 	Grammar gr;
 	test_grammar(gr);
+	std::cout << gr.show() << std::endl;
 	Parser p(gr);
 	Expr ex;
-	p.parse("(a+(b*a))", ex, "exp");
+	p.parse("((a*b)+(b*a))", ex, "exp");
 	std::cout << ex << std::endl;
 	return 0;
 }

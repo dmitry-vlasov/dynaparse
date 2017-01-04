@@ -12,21 +12,21 @@ typedef string::const_iterator StrIter;
 
 struct Node {
 	bool   is_fin;
-	Tree*  type;
+	Tree*  tree;
 	string body;
+	Tree   next;
+	Rule*  rule;
+
 	bool operator == (const string& s) const { return body == s; }
 	bool operator != (const string& s) const { return !operator == (s); }
 	bool matches(StrIter ch, StrIter end) const {
-		assert(!type);
+		assert(!tree);
 		StrIter x = body.begin();
 		for (; x != body.end() && ch != end; ++x, ++ch) {
 			if (*x != *ch) return false;
 		}
 		return ch != end || x == body.end();
 	}
-	Tree  tree;
-	uint  level;
-	Rule* rule;
 };
 
 class Parser {
@@ -40,9 +40,8 @@ public :
 			Node* n = add(tree, rule.right);
 			n->rule = &rule;
 		}
-		std::cout << gr.show() << std::endl;
 	}
-	void parse(const string& src, Expr& expr, const string& type);
+	bool parse(const string& src, Expr& expr, const string& type);
 
 private :
 	Node createNode(Symb& s);
@@ -55,10 +54,10 @@ inline Node Parser::createNode(Symb& s){
 	Node n;
 	n.body = s.body;
 	n.rule = nullptr;
-	n.type = nullptr;
+	n.tree = nullptr;
 	s.term = true;
 	if (trees.count(s.body)) {
-		n.type = &trees[s.body];
+		n.tree = &trees[s.body];
 		s.term = false;
 	}
 	return n;
@@ -73,8 +72,8 @@ inline Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 		for (Node& p : *m) {
 			if (p == x.body) {
 				n = &p;
-				m = &p.tree;
-				x.term = !p.type;
+				m = &p.next;
+				x.term = !p.tree;
 				new_symb = false;
 				break;
 			}
@@ -84,7 +83,7 @@ inline Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 			m->push_back(createNode(x));
 			n = &m->back();
 			n->is_fin = true;
-			m = &n->tree;
+			m = &n->next;
 		}
 	}
 	return n;
@@ -94,37 +93,34 @@ typedef Tree::const_iterator MapIter;
 
 enum class Action { RET, BREAK, CONT };
 
-inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end, Expr& t, uint ind) {
+inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end, Expr& t) {
 	if (Rule* r = n.top()->rule) {
-		//if (r->ind <= ind) {
-			t.rule = r;
-			return Action::RET;
-		//} else
-		//	return Action::BREAK;
+		t.rule = r;
+		return Action::RET;
 	} else if (ch + 1 == end)
 		return Action::BREAK;
 	else {
-		n.push(n.top()->tree.begin());
+		n.push(n.top()->next.begin());
 		m.push(++ch);
 	}
 	return Action::CONT;
 }
 
-inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Tree* type, uint ind, bool initial = false) {
-	if (initial || !type->size()) return StrIter();
+inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Tree* tree, bool initial = false) {
+	if (initial || !tree->size()) return StrIter();
 	stack<MapIter> n;
 	stack<StrIter> m;
 	stack<MapIter> childnodes;
-	n.push(type->begin());
+	n.push(tree->begin());
 	m.push(x);
 	while (!n.empty() && !m.empty()) {
-		if (Tree* tp = n.top()->type) {
+		if (Tree* deeper = n.top()->tree) {
 			t.children.push_back(Expr());
 			childnodes.push(n.top());
 			Expr& child = t.children.back();
-			auto ch = parse_LL(child, m.top(), end, tp, ind, n.top() == type->begin());
+			auto ch = parse_LL(child, m.top(), end, deeper, n.top() == tree->begin());
 			if (ch != StrIter()) {
-				switch (act(n, m, ch, end, t, ind)) {
+				switch (act(n, m, ch, end, t)) {
 				case Action::RET  : return ch;
 				case Action::BREAK: return StrIter();
 				case Action::CONT : continue;
@@ -134,7 +130,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Tree* type, uint ind, b
 				childnodes.pop();
 			}
 		} else if (n.top()->matches(m.top(), end)) {
-			switch (act(n, m, m.top(), end, t, ind)) {
+			switch (act(n, m, m.top(), end, t)) {
 			case Action::RET  : return m.top();
 			case Action::BREAK: return StrIter();
 			case Action::CONT : continue;
@@ -154,11 +150,9 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Tree* type, uint ind, b
 	return StrIter();
 }
 
-inline void Parser::parse(const string& src, Expr& expr, const string& type) {
-	StrIter it = parse_LL(expr, src.begin(), src.end(), &trees[type], 0);
-	if (it + 1 != src.end()) {
-		std::cout << "FUCK" << std::endl;
-	}
+bool Parser::parse(const string& src, Expr& expr, const string& type) {
+	StrIter it = parse_LL(expr, src.begin(), src.end(), &trees[type]);
+	return it + 1 == src.end();
 }
 
 }}
