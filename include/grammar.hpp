@@ -30,15 +30,7 @@ inline Rule& operator << (const string& s, Rule&& r) {
 
 struct Type {
 	string name;
-	vector<string> sup;
-	Type& operator << (const string& s) { sup.push_back(s); return *this; }
-	string show() const {
-		if (!sup.size()) return name;
-		string ret = name;
-		ret += " : ";
-		for (auto& s : sup) ret += s + " ";
-		return ret;
-	}
+	string show() const { return name; }
 };
 
 struct Expr {
@@ -49,16 +41,8 @@ struct Expr {
 	string show() const {
 		string ret;
 		int i = 0;
-		if (!rule) {
-			return "NULL";
-		}
-		for (auto& p : rule->right) {
-			if (p.term) {
-				ret += p.body;
-			} else {
-				ret += children[i ++].show();
-			}
-		}
+		for (auto& p : rule->right)
+			ret += p.term ? p.body : children[i ++].show();
 		return ret;
 	}
 };

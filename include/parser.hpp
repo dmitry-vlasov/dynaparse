@@ -37,7 +37,6 @@ struct Tree::Node {
 struct ExtType {
 	Type* type;
 	Tree tree;
-	map<ExtType*, Rule*> supers;
 };
 
 class Parser {
@@ -103,14 +102,6 @@ inline Tree::Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 
 typedef Tree::Map::const_iterator MapIter;
 
-inline Rule* find_super(ExtType* type, ExtType* super) {
-	auto it =type->supers.find(super);
-	if (it != type->supers.end())
-		return it->second;
-	else
-		return nullptr;
-}
-
 enum class Action { RET, BREAK, CONT };
 
 inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end, Expr& t, uint ind) {
@@ -130,60 +121,46 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end,
 }
 
 inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, ExtType* type, uint ind, bool initial = false) {
-	if (!initial && type->tree.map.size()) {
-		//t.kind = Expr::NODE;
-
-		stack<MapIter> n;
-		stack<StrIter> m;
-		stack<MapIter> childnodes;
-		n.push(type->tree.map.begin());
-		m.push(x);
-		while (!n.empty() && !m.empty()) {
-			if (ExtType* tp = n.top()->type) {
-				t.children.push_back(Expr());
-				childnodes.push(n.top());
-				Expr& child = t.children.back();
-				auto ch = parse_LL(child, m.top(), end, tp, ind, n.top() == type->tree.map.begin());
-				if (ch != StrIter()) {
-					switch (act(n, m, ch, end, t, ind)) {
-					case Action::RET  : return ch;
-					case Action::BREAK: goto out;
-					case Action::CONT : continue;
-					}
-				} else {
-					t.children.pop_back();
-					childnodes.pop();
-				}
-			} else if (n.top()->matches(m.top(), end)) {
-				switch (act(n, m, m.top(), end, t, ind)) {
-				case Action::RET  : return m.top();
-				case Action::BREAK: goto out;
+	if (initial || !type->tree.map.size()) return StrIter();
+	stack<MapIter> n;
+	stack<StrIter> m;
+	stack<MapIter> childnodes;
+	n.push(type->tree.map.begin());
+	m.push(x);
+	while (!n.empty() && !m.empty()) {
+		if (ExtType* tp = n.top()->type) {
+			t.children.push_back(Expr());
+			childnodes.push(n.top());
+			Expr& child = t.children.back();
+			auto ch = parse_LL(child, m.top(), end, tp, ind, n.top() == type->tree.map.begin());
+			if (ch != StrIter()) {
+				switch (act(n, m, ch, end, t, ind)) {
+				case Action::RET  : return ch;
+				case Action::BREAK: return StrIter();
 				case Action::CONT : continue;
 				}
+			} else {
+				t.children.pop_back();
+				childnodes.pop();
 			}
-			while (n.top()->is_fin) {
-				n.pop();
-				m.pop();
-				if (!childnodes.empty() && childnodes.top() == n.top()) {
-					t.children.pop_back();
-					childnodes.pop();
-				}
-				if (n.empty() || m.empty()) goto out;
+		} else if (n.top()->matches(m.top(), end)) {
+			switch (act(n, m, m.top(), end, t, ind)) {
+			case Action::RET  : return m.top();
+			case Action::BREAK: return StrIter();
+			case Action::CONT : continue;
 			}
-			++n.top();
 		}
-		out: ;
+		while (n.top()->is_fin) {
+			n.pop();
+			m.pop();
+			if (!childnodes.empty() && childnodes.top() == n.top()) {
+				t.children.pop_back();
+				childnodes.pop();
+			}
+			if (n.empty() || m.empty()) return StrIter();
+		}
+		++n.top();
 	}
-	/*if (x->type) {
-		if (x->type == type) {
-			t = Expr(*x);
-			return x;
-		} else if (Rule* super = find_super(x->type, type)) {
-			t = Expr(super);
-			t.children.push_back(Expr(*x));
-			return x;
-		}
-	}*/
 	return StrIter();
 }
 
