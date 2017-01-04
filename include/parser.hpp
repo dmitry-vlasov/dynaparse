@@ -11,13 +11,13 @@ struct Tree {
 	Map map;
 };
 
-struct ExtType;
+struct Type;
 
 typedef string::const_iterator StrIter;
 
 struct Tree::Node {
 	bool     is_fin;
-	ExtType* type;
+	Type* type;
 	string   body;
 	bool operator == (const string& s) const { return body == s; }
 	bool operator != (const string& s) const { return !operator == (s); }
@@ -34,19 +34,18 @@ struct Tree::Node {
 	Rule* rule;
 };
 
-struct ExtType {
-	Type* type;
+struct Type {
 	Tree tree;
 };
 
 class Parser {
 public :
 	Parser(Grammar& gr) : grammar(gr), types() {
-		for (Type& type : grammar.types) {
-			types[type.name].type = &type;
+		for (Rule& rule : grammar.rules) {
+			types[rule.left];
 		}
 		for (Rule& rule : grammar.rules) {
-			ExtType& type = types[rule.left];
+			Type& type = types[rule.left];
 			Tree::Node* n = add(type.tree, rule.right);
 			n->rule = &rule;
 		}
@@ -58,7 +57,7 @@ private :
 	Tree::Node createNode(Symb& s);
 	Tree::Node* add(Tree& tree, vector<Symb>& ex);
 	Grammar& grammar;
-	map<string, ExtType> types;
+	map<string, Type> types;
 };
 
 inline Tree::Node Parser::createNode(Symb& s){
@@ -120,7 +119,7 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end,
 	return Action::CONT;
 }
 
-inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, ExtType* type, uint ind, bool initial = false) {
+inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Type* type, uint ind, bool initial = false) {
 	if (initial || !type->tree.map.size()) return StrIter();
 	stack<MapIter> n;
 	stack<StrIter> m;
@@ -128,7 +127,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, ExtType* type, uint ind
 	n.push(type->tree.map.begin());
 	m.push(x);
 	while (!n.empty() && !m.empty()) {
-		if (ExtType* tp = n.top()->type) {
+		if (Type* tp = n.top()->type) {
 			t.children.push_back(Expr());
 			childnodes.push(n.top());
 			Expr& child = t.children.back();
@@ -170,6 +169,5 @@ inline void Parser::parse(const string& src, Expr& expr, const string& type) {
 		std::cout << "FUCK" << std::endl;
 	}
 }
-
 
 }}

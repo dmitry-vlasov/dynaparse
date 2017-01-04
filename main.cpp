@@ -5,7 +5,6 @@ using namespace dynaparse;
 using namespace xxx;
 
 void test_grammar(Grammar& gr) {
-	gr << Type {"exp"};
 	gr << ("exp" << Rule() << "(" << "exp" << "+" << "exp" << ")");
 	gr << ("exp" << Rule() << "(" << "exp" << "*" << "exp" << ")");
 	gr << ("exp" << Rule() << "a");

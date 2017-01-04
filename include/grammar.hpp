@@ -28,11 +28,6 @@ inline Rule& operator << (const string& s, Rule&& r) {
 	return r;
 }
 
-struct Type {
-	string name;
-	string show() const { return name; }
-};
-
 struct Expr {
 	Expr() : rule(nullptr), children() { }
 	Expr(const Rule* r) : rule(r), children() { }
@@ -41,8 +36,7 @@ struct Expr {
 	string show() const {
 		string ret;
 		int i = 0;
-		for (auto& p : rule->right)
-			ret += p.term ? p.body : children[i ++].show();
+		for (auto& p : rule->right) ret += p.term ? p.body : children[i ++].show();
 		return ret;
 	}
 };
@@ -52,16 +46,11 @@ ostream& operator << (ostream& os, const Expr& ex) {
 }
 
 struct Grammar {
-	vector<Type> types;
 	vector<Rule> rules;
 	Grammar& operator << (const Rule& rule) { rules.push_back(rule); return *this; }
-	Grammar& operator << (const Type& type) { types.push_back(type); return *this; }
 	string show() const {
 		string ret;
-		ret += "Non-terminals:\n";
-		for (auto& t : types) ret += t.show() + "\n";
-		ret += "\n";
-		ret += "Rules:\n";
+		ret += "Grammar rules:\n";
 		for (auto& r : rules) ret += r.show() + "\n";
 		ret += "\n";
 		return ret;
