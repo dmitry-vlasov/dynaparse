@@ -14,7 +14,7 @@ typedef string::const_iterator StrIter;
 
 struct Expr;
 
-typedef void (Semantic) (Expr&, StrIter beg, StrIter end);
+typedef void (Semantic) (Expr*, StrIter beg, StrIter end);
 
 struct Rule {
 	string       left;

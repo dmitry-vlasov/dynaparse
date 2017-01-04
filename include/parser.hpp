@@ -72,12 +72,10 @@ typedef Tree::const_iterator MapIter;
 
 enum class Action { RET, BREAK, CONT };
 
-inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch, StrIter end, Skipper* skipper, Expr& t) {
+inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch, StrIter end, Skipper* skipper, Expr* t) {
 	if (const Rule* r = n.top()->rule) {
-		t.rule = r;
-		if (r->semantic) {
-			r->semantic(t, beg, ch);
-		}
+		t->rule = r;
+		if (r->semantic) r->semantic(t, beg, ch);
 		return Action::RET;
 	} else if (ch + 1 == end)
 		return Action::BREAK;
@@ -89,8 +87,9 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch,
 	return Action::CONT;
 }
 
-inline StrIter parse_LL(Expr& t, StrIter beg, StrIter end, Skipper* skipper, const Tree& tree, bool initial = false) {
-	if (initial || !tree.size()) return StrIter();
+inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& tree, bool initial = false) {
+	if (initial || !tree.size()) return nullptr;
+	Expr* t = new Expr();
 	stack<MapIter> n;
 	stack<StrIter> m;
 	stack<MapIter> childnodes;
@@ -98,25 +97,22 @@ inline StrIter parse_LL(Expr& t, StrIter beg, StrIter end, Skipper* skipper, con
 	m.push(beg);
 	while (!n.empty() && !m.empty()) {
 		if (const Tree* deeper = n.top()->tree) {
-			t.nodes.push_back(new Expr());
 			childnodes.push(n.top());
-			Expr& child = *t.nodes.back();
-			auto ch = parse_LL(child, m.top(), end, skipper, *deeper, n.top() == tree.begin());
-			if (ch != StrIter()) {
+			StrIter ch = m.top();
+			if (Expr* child = parse_LL(ch, end, skipper, *deeper, n.top() == tree.begin())) {
+				t->nodes.push_back(child);
 				switch (act(n, m, beg, ch, end, skipper, t)) {
-				case Action::RET  : return ch;
-				case Action::BREAK: return StrIter();
+				case Action::RET  : beg = ch; return t;
+				case Action::BREAK: goto out;
 				case Action::CONT : continue;
 				}
 			} else {
-				delete t.nodes.back();
-				t.nodes.pop_back();
 				childnodes.pop();
 			}
 		} else if (n.top()->matches(skipper, m.top(), end)) {
 			switch (act(n, m, beg, m.top(), end, skipper, t)) {
-			case Action::RET  : return m.top();
-			case Action::BREAK: return StrIter();
+			case Action::RET  : beg = m.top(); return t;
+			case Action::BREAK: goto out;
 			case Action::CONT : continue;
 			}
 		}
@@ -124,15 +120,17 @@ inline StrIter parse_LL(Expr& t, StrIter beg, StrIter end, Skipper* skipper, con
 			n.pop();
 			m.pop();
 			if (!childnodes.empty() && childnodes.top() == n.top()) {
-				delete t.nodes.back();
-				t.nodes.pop_back();
+				delete t->nodes.back();
+				t->nodes.pop_back();
 				childnodes.pop();
 			}
-			if (n.empty() || m.empty()) return StrIter();
+			if (n.empty() || m.empty()) goto out;
 		}
 		++n.top();
 	}
-	return StrIter();
+	out :
+	delete t;
+	return nullptr;
 }
 
 } // parser namespace
@@ -157,23 +155,15 @@ private :
 	map<string, parser::Tree> trees;
 };
 
-
 Expr* Parser::parse(const string& src, const string& type) {
-	Expr* expr = new Expr();
-	auto ch = parse_LL(*expr, src.begin(), src.end(), grammar.skipper, trees[type]);
-	if (ch == StrIter()) {
+	StrIter beg = src.begin();
+	if (Expr* expr = parse_LL(beg, src.end(), grammar.skipper, trees[type])) {
+		++beg;
+		while (beg != src.end() && grammar.skipper(*beg)) ++beg;
+		if (beg == src.end()) return expr;
 		delete expr;
-		return nullptr;
-	} else  {
-		++ch;
 	}
-	while (ch != src.end() && grammar.skipper(*ch)) ++ch;
-	if (ch == src.end()) {
-		return expr;
-	} else {
-		delete expr;
-		return nullptr;
-	}
+	return nullptr;
 }
 
 }

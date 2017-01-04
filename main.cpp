@@ -4,8 +4,8 @@ using namespace dynaparse;
 
 Grammar test_grammar() {
 	Grammar gr;
-	gr << ("exp" << Rule() << "(" << "exp" << "+" << "exp" << ")");
 	gr << ("exp" << Rule() << "(" << "exp" << "*" << "exp" << ")");
+	gr << ("exp" << Rule() << "(" << "exp" << "+" << "exp" << ")");
 	gr << ("exp" << Rule() << "a");
 	gr << ("exp" << Rule() << "b");
 	return gr;
