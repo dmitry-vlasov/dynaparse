@@ -12,15 +12,17 @@ typedef string::const_iterator StrIter;
 
 struct Node {
 	bool   final;
-	const Tree*  tree;
 	string body;
 	Tree   next;
-	const Rule*  rule;
+	const Tree* tree;
+	const Rule* rule;
+	Skipper*    skipper;
 
 	bool operator == (const string& s) const { return body == s; }
 	bool operator != (const string& s) const { return !operator == (s); }
 	bool matches(StrIter ch, StrIter end) const {
 		assert(!tree);
+		while (ch != end && skipper(*ch)) ++ch;
 		StrIter x = body.begin();
 		for (; x != body.end() && ch != end; ++x, ++ch) {
 			if (*x != *ch) return false;
@@ -29,11 +31,12 @@ struct Node {
 	}
 };
 
-inline Node createNode(map<string, Tree>& trees, Symb& s) {
+inline Node createNode(map<string, Tree>& trees, Skipper* skipper, Symb& s) {
 	Node n;
 	n.body = s.body;
 	n.rule = nullptr;
 	n.tree = nullptr;
+	n.skipper = skipper;
 	s.term = true;
 	if (trees.count(s.body)) {
 		n.tree = &trees.at(s.body);
@@ -42,7 +45,7 @@ inline Node createNode(map<string, Tree>& trees, Symb& s) {
 	return n;
 }
 
-inline Node* add(map<string, Tree>& trees, Tree& tree, vector<Symb>& ex) {
+inline Node* add(map<string, Tree>& trees, Skipper* skipper, Tree& tree, vector<Symb>& ex) {
 	assert(ex.size());
 	Tree* m = &tree;
 	Node* n = nullptr;
@@ -59,7 +62,7 @@ inline Node* add(map<string, Tree>& trees, Tree& tree, vector<Symb>& ex) {
 		}
 		if (new_symb) {
 			if (m->size()) m->back().final = false;
-			m->push_back(createNode(trees, x));
+			m->push_back(createNode(trees, skipper, x));
 			n = &m->back();
 			n->final = true;
 			m = &n->next;
@@ -72,7 +75,7 @@ typedef Tree::const_iterator MapIter;
 
 enum class Action { RET, BREAK, CONT };
 
-inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end, Expr& t) {
+inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end, Skipper* skipper, Expr& t) {
 	if (const Rule* r = n.top()->rule) {
 		t.rule = r;
 		return Action::RET;
@@ -80,12 +83,13 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end,
 		return Action::BREAK;
 	else {
 		n.push(n.top()->next.begin());
+		while (ch != end && skipper(*ch)) ++ch;
 		m.push(++ch);
 	}
 	return Action::CONT;
 }
 
-inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, const Tree& tree, bool initial = false) {
+inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Skipper* skipper, const Tree& tree, bool initial = false) {
 	if (initial || !tree.size()) return StrIter();
 	stack<MapIter> n;
 	stack<StrIter> m;
@@ -97,9 +101,9 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, const Tree& tree, bool 
 			t.children.push_back(Expr());
 			childnodes.push(n.top());
 			Expr& child = t.children.back();
-			auto ch = parse_LL(child, m.top(), end, *deeper, n.top() == tree.begin());
+			auto ch = parse_LL(child, m.top(), end, skipper, *deeper, n.top() == tree.begin());
 			if (ch != StrIter()) {
-				switch (act(n, m, ch, end, t)) {
+				switch (act(n, m, ch, end, skipper, t)) {
 				case Action::RET  : return ch;
 				case Action::BREAK: return StrIter();
 				case Action::CONT : continue;
@@ -109,7 +113,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, const Tree& tree, bool 
 				childnodes.pop();
 			}
 		} else if (n.top()->matches(m.top(), end)) {
-			switch (act(n, m, m.top(), end, t)) {
+			switch (act(n, m, m.top(), end, skipper, t)) {
 			case Action::RET  : return m.top();
 			case Action::BREAK: return StrIter();
 			case Action::CONT : continue;
@@ -139,7 +143,7 @@ public :
 		}
 		for (Rule& rule : grammar.rules) {
 			parser::Tree& tree = trees[rule.left];
-			parser::Node* n = add(trees, tree, rule.right);
+			parser::Node* n = add(trees, gr.skipper, tree, rule.right);
 			n->rule = &rule;
 		}
 	}
@@ -152,7 +156,10 @@ private :
 
 
 bool Parser::parse(const string& src, Expr& expr, const string& type) {
-	return parse_LL(expr, src.begin(), src.end(), trees[type]) + 1 == src.end();
+	auto ch = parse_LL(expr, src.begin(), src.end(), grammar.skipper, trees[type]);
+	if (ch == parser::StrIter()) return false; else ++ch;
+	while (ch != src.end() && grammar.skipper(*ch)) ++ch;
+	return ch == src.end();
 }
 
 }

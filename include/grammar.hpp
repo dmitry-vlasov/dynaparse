@@ -33,6 +33,7 @@ struct Expr {
 	const Rule*  rule;
 	vector<Expr> children;
 	string show() const {
+		if (!rule) return "null";
 		string ret;
 		int i = 0;
 		for (auto& p : rule->right) ret += p.term ? p.body : children[i ++].show();
@@ -44,8 +45,11 @@ ostream& operator << (ostream& os, const Expr& ex) {
 	os << ex.show(); return os;
 }
 
+typedef bool (Skipper) (char);
+
 struct Grammar {
 	vector<Rule> rules;
+	Skipper*     skipper;
 	Grammar& operator << (const Rule& rule) { rules.push_back(rule); return *this; }
 	string show() const {
 		string ret;
@@ -54,6 +58,7 @@ struct Grammar {
 		ret += "\n";
 		return ret;
 	}
+	Grammar() : rules(), skipper([](char c) ->bool {return c <= ' '; }) { }
 };
 
 }
