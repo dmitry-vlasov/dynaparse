@@ -5,17 +5,13 @@
 namespace dynaparse {
 namespace xxx {
 
-struct Tree {
-	struct Node;
-	typedef vector<Node> Map;
-	Map map;
-};
+struct Node;
 
+typedef vector<Node> Tree;
 typedef string::const_iterator StrIter;
 
-struct Tree::Node {
+struct Node {
 	bool   is_fin;
-	bool   is_term;
 	Tree*  type;
 	string body;
 	bool operator == (const string& s) const { return body == s; }
@@ -41,7 +37,7 @@ public :
 		}
 		for (Rule& rule : grammar.rules) {
 			Tree& tree = trees[rule.left];
-			Tree::Node* n = add(tree, rule.right);
+			Node* n = add(tree, rule.right);
 			n->rule = &rule;
 		}
 		std::cout << gr.show() << std::endl;
@@ -49,46 +45,44 @@ public :
 	void parse(const string& src, Expr& expr, const string& type);
 
 private :
-	Tree::Node createNode(Symb& s);
-	Tree::Node* add(Tree& tree, vector<Symb>& ex);
+	Node createNode(Symb& s);
+	Node* add(Tree& tree, vector<Symb>& ex);
 	Grammar& grammar;
 	map<string, Tree> trees;
 };
 
-inline Tree::Node Parser::createNode(Symb& s){
-	Tree::Node n;
+inline Node Parser::createNode(Symb& s){
+	Node n;
 	n.body = s.body;
 	n.rule = nullptr;
 	n.type = nullptr;
-	n.is_term = true;
 	s.term = true;
 	if (trees.count(s.body)) {
 		n.type = &trees[s.body];
 		s.term = false;
-		n.is_term = false;
 	}
 	return n;
 }
 
-inline Tree::Node* Parser::add(Tree& tree, vector<Symb>& ex) {
+inline Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 	assert(ex.size());
 	Tree* m = &tree;
-	Tree::Node* n = nullptr;
+	Node* n = nullptr;
 	for (auto& x : ex) {
 		bool new_symb = true;
-		for (Tree::Node& p : m->map) {
+		for (Node& p : *m) {
 			if (p == x.body) {
 				n = &p;
 				m = &p.tree;
-				x.term = p.is_term;
+				x.term = !p.type;
 				new_symb = false;
 				break;
 			}
 		}
 		if (new_symb) {
-			if (m->map.size()) m->map.back().is_fin = false;
-			m->map.push_back(createNode(x));
-			n = &m->map.back();
+			if (m->size()) m->back().is_fin = false;
+			m->push_back(createNode(x));
+			n = &m->back();
 			n->is_fin = true;
 			m = &n->tree;
 		}
@@ -96,7 +90,7 @@ inline Tree::Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 	return n;
 }
 
-typedef Tree::Map::const_iterator MapIter;
+typedef Tree::const_iterator MapIter;
 
 enum class Action { RET, BREAK, CONT };
 
@@ -110,25 +104,25 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end,
 	} else if (ch + 1 == end)
 		return Action::BREAK;
 	else {
-		n.push(n.top()->tree.map.begin());
+		n.push(n.top()->tree.begin());
 		m.push(++ch);
 	}
 	return Action::CONT;
 }
 
 inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Tree* type, uint ind, bool initial = false) {
-	if (initial || !type->map.size()) return StrIter();
+	if (initial || !type->size()) return StrIter();
 	stack<MapIter> n;
 	stack<StrIter> m;
 	stack<MapIter> childnodes;
-	n.push(type->map.begin());
+	n.push(type->begin());
 	m.push(x);
 	while (!n.empty() && !m.empty()) {
 		if (Tree* tp = n.top()->type) {
 			t.children.push_back(Expr());
 			childnodes.push(n.top());
 			Expr& child = t.children.back();
-			auto ch = parse_LL(child, m.top(), end, tp, ind, n.top() == type->map.begin());
+			auto ch = parse_LL(child, m.top(), end, tp, ind, n.top() == type->begin());
 			if (ch != StrIter()) {
 				switch (act(n, m, ch, end, t, ind)) {
 				case Action::RET  : return ch;
