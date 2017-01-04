@@ -11,14 +11,13 @@ struct Tree {
 	Map map;
 };
 
-struct Type;
-
 typedef string::const_iterator StrIter;
 
 struct Tree::Node {
-	bool     is_fin;
-	Type* type;
-	string   body;
+	bool   is_fin;
+	bool   is_term;
+	Tree*  type;
+	string body;
 	bool operator == (const string& s) const { return body == s; }
 	bool operator != (const string& s) const { return !operator == (s); }
 	bool matches(StrIter ch, StrIter end) const {
@@ -34,19 +33,15 @@ struct Tree::Node {
 	Rule* rule;
 };
 
-struct Type {
-	Tree tree;
-};
-
 class Parser {
 public :
-	Parser(Grammar& gr) : grammar(gr), types() {
+	Parser(Grammar& gr) : grammar(gr), trees() {
 		for (Rule& rule : grammar.rules) {
-			types[rule.left];
+			trees[rule.left];
 		}
 		for (Rule& rule : grammar.rules) {
-			Type& type = types[rule.left];
-			Tree::Node* n = add(type.tree, rule.right);
+			Tree& tree = trees[rule.left];
+			Tree::Node* n = add(tree, rule.right);
 			n->rule = &rule;
 		}
 		std::cout << gr.show() << std::endl;
@@ -57,7 +52,7 @@ private :
 	Tree::Node createNode(Symb& s);
 	Tree::Node* add(Tree& tree, vector<Symb>& ex);
 	Grammar& grammar;
-	map<string, Type> types;
+	map<string, Tree> trees;
 };
 
 inline Tree::Node Parser::createNode(Symb& s){
@@ -65,10 +60,12 @@ inline Tree::Node Parser::createNode(Symb& s){
 	n.body = s.body;
 	n.rule = nullptr;
 	n.type = nullptr;
+	n.is_term = true;
 	s.term = true;
-	if (types.count(s.body)) {
-		n.type = &types[s.body];
+	if (trees.count(s.body)) {
+		n.type = &trees[s.body];
 		s.term = false;
+		n.is_term = false;
 	}
 	return n;
 }
@@ -83,7 +80,7 @@ inline Tree::Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 			if (p == x.body) {
 				n = &p;
 				m = &p.tree;
-				x.term = !p.type;
+				x.term = p.is_term;
 				new_symb = false;
 				break;
 			}
@@ -119,19 +116,19 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end,
 	return Action::CONT;
 }
 
-inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Type* type, uint ind, bool initial = false) {
-	if (initial || !type->tree.map.size()) return StrIter();
+inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Tree* type, uint ind, bool initial = false) {
+	if (initial || !type->map.size()) return StrIter();
 	stack<MapIter> n;
 	stack<StrIter> m;
 	stack<MapIter> childnodes;
-	n.push(type->tree.map.begin());
+	n.push(type->map.begin());
 	m.push(x);
 	while (!n.empty() && !m.empty()) {
-		if (Type* tp = n.top()->type) {
+		if (Tree* tp = n.top()->type) {
 			t.children.push_back(Expr());
 			childnodes.push(n.top());
 			Expr& child = t.children.back();
-			auto ch = parse_LL(child, m.top(), end, tp, ind, n.top() == type->tree.map.begin());
+			auto ch = parse_LL(child, m.top(), end, tp, ind, n.top() == type->map.begin());
 			if (ch != StrIter()) {
 				switch (act(n, m, ch, end, t, ind)) {
 				case Action::RET  : return ch;
@@ -164,7 +161,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Type* type, uint ind, b
 }
 
 inline void Parser::parse(const string& src, Expr& expr, const string& type) {
-	StrIter it = parse_LL(expr, src.begin(), src.end(), &types[type], 0);
+	StrIter it = parse_LL(expr, src.begin(), src.end(), &trees[type], 0);
 	if (it + 1 != src.end()) {
 		std::cout << "FUCK" << std::endl;
 	}
