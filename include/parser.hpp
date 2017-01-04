@@ -51,6 +51,7 @@ public :
 			Tree::Node* n = add(type.tree, rule.right);
 			n->rule = &rule;
 		}
+		std::cout << gr.show() << std::endl;
 	}
 	void parse(const string& src, Expr& expr, const string& type);
 
@@ -84,6 +85,7 @@ inline Tree::Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 			if (p == x.body) {
 				n = &p;
 				m = &p.tree;
+				x.term = !p.type;
 				new_symb = false;
 				break;
 			}
