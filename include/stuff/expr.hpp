@@ -13,10 +13,10 @@ struct Expr {
 		Symbol* var;
 	};
 
-	Expr() : kind(VAR), val(), children() { val.var = nullptr; }
+	Expr() : kind(VAR), val(), nodes() { val.var = nullptr; }
 	Expr(Rule* r) : kind(NODE)  { val.rule = r; }
-	Expr(Symbol& v) : kind(VAR), val(), children() { val.var = &v; }
-	Expr(Rule* r, const Children& ch) : kind(NODE), val(), children(ch) {
+	Expr(Symbol& v) : kind(VAR), val(), nodes() { val.var = &v; }
+	Expr(Rule* r, const Children& ch) : kind(NODE), val(), nodes(ch) {
 		val.rule = r;
 	}
 	bool operator == (const Expr& t) const;
@@ -26,7 +26,7 @@ struct Expr {
 
 	Kind kind;
 	Value val;
-	Children children;
+	Children nodes;
 };
 
 template<class T>
@@ -61,14 +61,14 @@ void add_term(Tree<T>& tree_m, const Expr& expr_t, map<const Symbol*, const Symb
 	if (!tree_m.rules.has(expr_t.val.rule)) {
 		vector<Tree<T>>& tree_t = tree_m.rules[expr_t.val.rule];
 		for_each(
-			expr_t.children.begin(),
-			expr_t.children.end(),
+			expr_t.nodes.begin(),
+			expr_t.nodes.end(),
 			[&tree_t](auto) mutable { tree_t.push_back(Tree<T>()); }
 		);
 	}
 	vector<Tree<T>>& tree_t = tree_m.rules[expr_t.val.rule];
 	auto tree_ch = tree_t.begin();
-	for (auto& expr_ch : expr_t.children) {
+	for (auto& expr_ch : expr_t.nodes) {
 		add_term(*tree_ch ++, expr_ch, mp, ex);
 	}
 }

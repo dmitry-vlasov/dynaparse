@@ -43,9 +43,9 @@ Symbols::iterator parse_LL(Expr& t, Symbols::iterator x, Type* type, uint ind, b
 		m.push(x);
 		while (!n.empty() && !m.empty()) {
 			if (Type* tp = n.top()->symb.type) {
-				t.children.push_back(Expr());
+				t.nodes.push_back(Expr());
 				childnodes.push(n.top());
-				Expr& child = t.children.back();
+				Expr& child = t.nodes.back();
 				auto ch = parse_LL(child, m.top(), tp, ind, n.top() == type->rules.map.begin());
 				if (ch != Symbols::iterator()) {
 					switch (act(n, m, ch, t, ind)) {
@@ -54,7 +54,7 @@ Symbols::iterator parse_LL(Expr& t, Symbols::iterator x, Type* type, uint ind, b
 					case Action::CONT : continue;
 					}
 				} else {
-					t.children.pop_back();
+					t.nodes.pop_back();
 					childnodes.pop();
 				}
 			} else if (n.top()->symb == *m.top()) {
@@ -68,7 +68,7 @@ Symbols::iterator parse_LL(Expr& t, Symbols::iterator x, Type* type, uint ind, b
 				n.pop();
 				m.pop();
 				if (!childnodes.empty() && childnodes.top() == n.top()) {
-					t.children.pop_back();
+					t.nodes.pop_back();
 					childnodes.pop();
 				}
 				if (n.empty() || m.empty()) goto out;
@@ -83,7 +83,7 @@ Symbols::iterator parse_LL(Expr& t, Symbols::iterator x, Type* type, uint ind, b
 			return x;
 		} else if (Rule* super = find_super(x->type, type)) {
 			t = Expr(super);
-			t.children.push_back(Expr(*x));
+			t.nodes.push_back(Expr(*x));
 			return x;
 		}
 	}

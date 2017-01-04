@@ -28,15 +28,16 @@ inline Rule& operator << (const string& s, Rule&& r) {
 }
 
 struct Expr {
-	Expr() : rule(nullptr), children() { }
-	Expr(const Rule* r) : rule(r), children() { }
-	const Rule*  rule;
-	vector<Expr> children;
+	Expr() : rule(nullptr), nodes() { }
+	Expr(const Rule* r) : rule(r), nodes() { }
+	virtual ~Expr() { for (Expr* e : nodes) delete e; }
+	const Rule*   rule;
+	vector<Expr*> nodes;
 	string show() const {
 		if (!rule) return "null";
 		string ret;
 		int i = 0;
-		for (auto& p : rule->right) ret += p.term ? p.body : children[i ++].show();
+		for (auto& p : rule->right) ret += p.term ? p.body : nodes[i ++]->show();
 		return ret;
 	}
 };
@@ -58,7 +59,7 @@ struct Grammar {
 		ret += "\n";
 		return ret;
 	}
-	Grammar() : rules(), skipper([](char c) ->bool {return c <= ' '; }) { }
+	Grammar() : rules(), skipper([](char c)->bool {return c <= ' '; }) { }
 };
 
 }

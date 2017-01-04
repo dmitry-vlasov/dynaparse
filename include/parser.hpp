@@ -98,9 +98,9 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Skipper* skipper, const
 	m.push(x);
 	while (!n.empty() && !m.empty()) {
 		if (const Tree* deeper = n.top()->tree) {
-			t.children.push_back(Expr());
+			t.nodes.push_back(new Expr());
 			childnodes.push(n.top());
-			Expr& child = t.children.back();
+			Expr& child = *t.nodes.back();
 			auto ch = parse_LL(child, m.top(), end, skipper, *deeper, n.top() == tree.begin());
 			if (ch != StrIter()) {
 				switch (act(n, m, ch, end, skipper, t)) {
@@ -109,7 +109,8 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Skipper* skipper, const
 				case Action::CONT : continue;
 				}
 			} else {
-				t.children.pop_back();
+				delete t.nodes.back();
+				t.nodes.pop_back();
 				childnodes.pop();
 			}
 		} else if (n.top()->matches(m.top(), end)) {
@@ -123,7 +124,8 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Skipper* skipper, const
 			n.pop();
 			m.pop();
 			if (!childnodes.empty() && childnodes.top() == n.top()) {
-				t.children.pop_back();
+				delete t.nodes.back();
+				t.nodes.pop_back();
 				childnodes.pop();
 			}
 			if (n.empty() || m.empty()) return StrIter();
