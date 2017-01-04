@@ -3,7 +3,7 @@
 #include "grammar.hpp"
 
 namespace dynaparse {
-namespace xxx {
+namespace parser {
 
 struct Node;
 
@@ -11,11 +11,11 @@ typedef vector<Node> Tree;
 typedef string::const_iterator StrIter;
 
 struct Node {
-	bool   is_fin;
-	Tree*  tree;
+	bool   final;
+	const Tree*  tree;
 	string body;
 	Tree   next;
-	Rule*  rule;
+	const Rule*  rule;
 
 	bool operator == (const string& s) const { return body == s; }
 	bool operator != (const string& s) const { return !operator == (s); }
@@ -29,41 +29,20 @@ struct Node {
 	}
 };
 
-class Parser {
-public :
-	Parser(Grammar& gr) : grammar(gr), trees() {
-		for (Rule& rule : grammar.rules) {
-			trees[rule.left];
-		}
-		for (Rule& rule : grammar.rules) {
-			Tree& tree = trees[rule.left];
-			Node* n = add(tree, rule.right);
-			n->rule = &rule;
-		}
-	}
-	bool parse(const string& src, Expr& expr, const string& type);
-
-private :
-	Node createNode(Symb& s);
-	Node* add(Tree& tree, vector<Symb>& ex);
-	Grammar& grammar;
-	map<string, Tree> trees;
-};
-
-inline Node Parser::createNode(Symb& s){
+inline Node createNode(map<string, Tree>& trees, Symb& s) {
 	Node n;
 	n.body = s.body;
 	n.rule = nullptr;
 	n.tree = nullptr;
 	s.term = true;
 	if (trees.count(s.body)) {
-		n.tree = &trees[s.body];
+		n.tree = &trees.at(s.body);
 		s.term = false;
 	}
 	return n;
 }
 
-inline Node* Parser::add(Tree& tree, vector<Symb>& ex) {
+inline Node* add(map<string, Tree>& trees, Tree& tree, vector<Symb>& ex) {
 	assert(ex.size());
 	Tree* m = &tree;
 	Node* n = nullptr;
@@ -79,10 +58,10 @@ inline Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 			}
 		}
 		if (new_symb) {
-			if (m->size()) m->back().is_fin = false;
-			m->push_back(createNode(x));
+			if (m->size()) m->back().final = false;
+			m->push_back(createNode(trees, x));
 			n = &m->back();
-			n->is_fin = true;
+			n->final = true;
 			m = &n->next;
 		}
 	}
@@ -94,7 +73,7 @@ typedef Tree::const_iterator MapIter;
 enum class Action { RET, BREAK, CONT };
 
 inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end, Expr& t) {
-	if (Rule* r = n.top()->rule) {
+	if (const Rule* r = n.top()->rule) {
 		t.rule = r;
 		return Action::RET;
 	} else if (ch + 1 == end)
@@ -106,19 +85,19 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end,
 	return Action::CONT;
 }
 
-inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Tree* tree, bool initial = false) {
-	if (initial || !tree->size()) return StrIter();
+inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, const Tree& tree, bool initial = false) {
+	if (initial || !tree.size()) return StrIter();
 	stack<MapIter> n;
 	stack<StrIter> m;
 	stack<MapIter> childnodes;
-	n.push(tree->begin());
+	n.push(tree.begin());
 	m.push(x);
 	while (!n.empty() && !m.empty()) {
-		if (Tree* deeper = n.top()->tree) {
+		if (const Tree* deeper = n.top()->tree) {
 			t.children.push_back(Expr());
 			childnodes.push(n.top());
 			Expr& child = t.children.back();
-			auto ch = parse_LL(child, m.top(), end, deeper, n.top() == tree->begin());
+			auto ch = parse_LL(child, m.top(), end, *deeper, n.top() == tree.begin());
 			if (ch != StrIter()) {
 				switch (act(n, m, ch, end, t)) {
 				case Action::RET  : return ch;
@@ -136,7 +115,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Tree* tree, bool initia
 			case Action::CONT : continue;
 			}
 		}
-		while (n.top()->is_fin) {
+		while (n.top()->final) {
 			n.pop();
 			m.pop();
 			if (!childnodes.empty() && childnodes.top() == n.top()) {
@@ -150,9 +129,30 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Tree* tree, bool initia
 	return StrIter();
 }
 
+} // parser namespace
+
+class Parser {
+public :
+	Parser(Grammar& gr) : grammar(gr), trees() {
+		for (Rule& rule : grammar.rules) {
+			trees[rule.left];
+		}
+		for (Rule& rule : grammar.rules) {
+			parser::Tree& tree = trees[rule.left];
+			parser::Node* n = add(trees, tree, rule.right);
+			n->rule = &rule;
+		}
+	}
+	bool parse(const string& src, Expr& expr, const string& type);
+
+private :
+	Grammar& grammar;
+	map<string, parser::Tree> trees;
+};
+
+
 bool Parser::parse(const string& src, Expr& expr, const string& type) {
-	StrIter it = parse_LL(expr, src.begin(), src.end(), &trees[type]);
-	return it + 1 == src.end();
+	return parse_LL(expr, src.begin(), src.end(), trees[type]) + 1 == src.end();
 }
 
-}}
+}

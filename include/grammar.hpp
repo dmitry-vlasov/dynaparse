@@ -3,7 +3,6 @@
 #include "std.hpp"
 
 namespace dynaparse {
-namespace xxx {
 
 struct Symb {
 	string body;
@@ -57,4 +56,4 @@ struct Grammar {
 	}
 };
 
-}}
+}

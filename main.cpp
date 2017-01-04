@@ -2,7 +2,6 @@
 #include "parser.hpp"
 
 using namespace dynaparse;
-using namespace xxx;
 
 void test_grammar(Grammar& gr) {
 	gr << ("exp" << Rule() << "(" << "exp" << "+" << "exp" << ")");
@@ -18,7 +17,11 @@ int main(int argc, const char* argv[]) {
 	std::cout << gr.show() << std::endl;
 	Parser p(gr);
 	Expr ex;
-	p.parse("((a*b)+(b*a))", ex, "exp");
+	if (!p.parse("((a*b)+(b*a))", ex, "exp")) {
+		std::cout << "FUCK!" << std::endl;
+	} else {
+		std::cout << "OK" << std::endl;
+	}
 	std::cout << ex << std::endl;
 	return 0;
 }
