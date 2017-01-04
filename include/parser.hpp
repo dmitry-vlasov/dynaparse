@@ -15,7 +15,7 @@ struct ExtType;
 
 typedef string::const_iterator StrIter;
 
-struct ExtSymb {
+struct Tree::Node {
 	bool     is_fin;
 	ExtType* type;
 	string   body;
@@ -29,10 +29,6 @@ struct ExtSymb {
 		}
 		return ch != end || x == body.end();
 	}
-};
-
-struct Tree::Node {
-	ExtSymb  symb;
 	Tree  tree;
 	uint  level;
 	Rule* rule;
@@ -67,13 +63,13 @@ private :
 
 inline Tree::Node Parser::createNode(Symb& s){
 	Tree::Node n;
-	n.symb.body = s.first;
+	n.body = s.body;
 	n.rule = nullptr;
-	n.symb.type = nullptr;
-	s.second = true;
-	if (types.count(s.first)) {
-		n.symb.type = &types[s.first];
-		s.second = false;
+	n.type = nullptr;
+	s.term = true;
+	if (types.count(s.body)) {
+		n.type = &types[s.body];
+		s.term = false;
 	}
 	return n;
 }
@@ -85,7 +81,7 @@ inline Tree::Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 	for (auto& x : ex) {
 		bool new_symb = true;
 		for (Tree::Node& p : m->map) {
-			if (p.symb == x.first) {
+			if (p == x.body) {
 				n = &p;
 				m = &p.tree;
 				new_symb = false;
@@ -93,10 +89,10 @@ inline Tree::Node* Parser::add(Tree& tree, vector<Symb>& ex) {
 			}
 		}
 		if (new_symb) {
-			if (m->map.size()) m->map.back().symb.is_fin = false;
+			if (m->map.size()) m->map.back().is_fin = false;
 			m->map.push_back(createNode(x));
 			n = &m->map.back();
-			n->symb.is_fin = true;
+			n->is_fin = true;
 			m = &n->tree;
 		}
 	}
@@ -141,7 +137,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, ExtType* type, uint ind
 		n.push(type->tree.map.begin());
 		m.push(x);
 		while (!n.empty() && !m.empty()) {
-			if (ExtType* tp = n.top()->symb.type) {
+			if (ExtType* tp = n.top()->type) {
 				t.children.push_back(Expr());
 				childnodes.push(n.top());
 				Expr& child = t.children.back();
@@ -156,14 +152,14 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, ExtType* type, uint ind
 					t.children.pop_back();
 					childnodes.pop();
 				}
-			} else if (n.top()->symb.matches(m.top(), end)) {
+			} else if (n.top()->matches(m.top(), end)) {
 				switch (act(n, m, m.top(), end, t, ind)) {
 				case Action::RET  : return m.top();
 				case Action::BREAK: goto out;
 				case Action::CONT : continue;
 				}
 			}
-			while (n.top()->symb.is_fin) {
+			while (n.top()->is_fin) {
 				n.pop();
 				m.pop();
 				if (!childnodes.empty() && childnodes.top() == n.top()) {

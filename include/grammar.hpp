@@ -5,12 +5,15 @@
 namespace dynaparse {
 namespace xxx {
 
-typedef pair<string, bool> Symb;
+struct Symb {
+	string body;
+	bool   term;
+};
 
 struct Rule {
 	string left;
 	vector<Symb> right;
-	Rule& operator << (const string& s) { right.push_back(Symb(s, false)); return *this; }
+	Rule& operator << (const string& s) { right.push_back(Symb{s, false}); return *this; }
 };
 
 inline Rule& operator << (const string& s, Rule&& r) {
@@ -33,9 +36,12 @@ struct Expr {
 	string show() const {
 		string ret;
 		int i = 0;
+		if (!rule) {
+			return "NULL";
+		}
 		for (auto& p : rule->right) {
-			if (p.second) {
-				ret += p.first;
+			if (p.term) {
+				ret += p.body;
 			} else {
 				ret += children[i ++].show();
 			}
