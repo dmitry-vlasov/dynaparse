@@ -10,9 +10,17 @@ struct Symb {
 	string show() const { return term ? "\"" + body + "\"" : body; }
 };
 
+typedef string::const_iterator StrIter;
+
+struct Expr;
+
+typedef void (Semantic) (Expr&, StrIter beg, StrIter end);
+
 struct Rule {
-	string left;
+	string       left;
 	vector<Symb> right;
+	Semantic*    semantic;
+	Rule() : left(), right(), semantic(nullptr) { }
 	Rule& operator << (const string& s) { right.push_back(Symb{s, false}); return *this; }
 	string show() const {
 		string ret = left + " -> ";
@@ -29,7 +37,6 @@ inline Rule& operator << (const string& s, Rule&& r) {
 
 struct Expr {
 	Expr() : rule(nullptr), nodes() { }
-	Expr(const Rule* r) : rule(r), nodes() { }
 	virtual ~Expr() { for (Expr* e : nodes) delete e; }
 	const Rule*   rule;
 	vector<Expr*> nodes;

@@ -8,7 +8,6 @@ namespace parser {
 struct Node;
 
 typedef vector<Node> Tree;
-typedef string::const_iterator StrIter;
 
 struct Node {
 	bool   final;
@@ -16,11 +15,10 @@ struct Node {
 	Tree   next;
 	const Tree* tree;
 	const Rule* rule;
-	Skipper*    skipper;
 
 	bool operator == (const string& s) const { return body == s; }
 	bool operator != (const string& s) const { return !operator == (s); }
-	bool matches(StrIter ch, StrIter end) const {
+	bool matches(Skipper* skipper, StrIter ch, StrIter end) const {
 		assert(!tree);
 		while (ch != end && skipper(*ch)) ++ch;
 		StrIter x = body.begin();
@@ -36,7 +34,6 @@ inline Node createNode(map<string, Tree>& trees, Skipper* skipper, Symb& s) {
 	n.body = s.body;
 	n.rule = nullptr;
 	n.tree = nullptr;
-	n.skipper = skipper;
 	s.term = true;
 	if (trees.count(s.body)) {
 		n.tree = &trees.at(s.body);
@@ -75,9 +72,12 @@ typedef Tree::const_iterator MapIter;
 
 enum class Action { RET, BREAK, CONT };
 
-inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end, Skipper* skipper, Expr& t) {
+inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch, StrIter end, Skipper* skipper, Expr& t) {
 	if (const Rule* r = n.top()->rule) {
 		t.rule = r;
+		if (r->semantic) {
+			r->semantic(t, beg, ch);
+		}
 		return Action::RET;
 	} else if (ch + 1 == end)
 		return Action::BREAK;
@@ -89,13 +89,13 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter ch, StrIter end,
 	return Action::CONT;
 }
 
-inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Skipper* skipper, const Tree& tree, bool initial = false) {
+inline StrIter parse_LL(Expr& t, StrIter beg, StrIter end, Skipper* skipper, const Tree& tree, bool initial = false) {
 	if (initial || !tree.size()) return StrIter();
 	stack<MapIter> n;
 	stack<StrIter> m;
 	stack<MapIter> childnodes;
 	n.push(tree.begin());
-	m.push(x);
+	m.push(beg);
 	while (!n.empty() && !m.empty()) {
 		if (const Tree* deeper = n.top()->tree) {
 			t.nodes.push_back(new Expr());
@@ -103,7 +103,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Skipper* skipper, const
 			Expr& child = *t.nodes.back();
 			auto ch = parse_LL(child, m.top(), end, skipper, *deeper, n.top() == tree.begin());
 			if (ch != StrIter()) {
-				switch (act(n, m, ch, end, skipper, t)) {
+				switch (act(n, m, beg, ch, end, skipper, t)) {
 				case Action::RET  : return ch;
 				case Action::BREAK: return StrIter();
 				case Action::CONT : continue;
@@ -113,8 +113,8 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Skipper* skipper, const
 				t.nodes.pop_back();
 				childnodes.pop();
 			}
-		} else if (n.top()->matches(m.top(), end)) {
-			switch (act(n, m, m.top(), end, skipper, t)) {
+		} else if (n.top()->matches(skipper, m.top(), end)) {
+			switch (act(n, m, beg, m.top(), end, skipper, t)) {
 			case Action::RET  : return m.top();
 			case Action::BREAK: return StrIter();
 			case Action::CONT : continue;
@@ -139,7 +139,7 @@ inline StrIter parse_LL(Expr& t, StrIter x, StrIter end, Skipper* skipper, const
 
 class Parser {
 public :
-	Parser(Grammar& gr) : grammar(gr), trees() {
+	Parser(Grammar gr) : grammar(gr), trees() {
 		for (Rule& rule : grammar.rules) {
 			trees[rule.left];
 		}
@@ -149,19 +149,31 @@ public :
 			n->rule = &rule;
 		}
 	}
-	bool parse(const string& src, Expr& expr, const string& type);
+	Expr* parse(const string& src, const string& type);
 
+	const Grammar& getGrammar() const { return grammar; }
 private :
-	Grammar& grammar;
+	Grammar grammar;
 	map<string, parser::Tree> trees;
 };
 
 
-bool Parser::parse(const string& src, Expr& expr, const string& type) {
-	auto ch = parse_LL(expr, src.begin(), src.end(), grammar.skipper, trees[type]);
-	if (ch == parser::StrIter()) return false; else ++ch;
+Expr* Parser::parse(const string& src, const string& type) {
+	Expr* expr = new Expr();
+	auto ch = parse_LL(*expr, src.begin(), src.end(), grammar.skipper, trees[type]);
+	if (ch == StrIter()) {
+		delete expr;
+		return nullptr;
+	} else  {
+		++ch;
+	}
 	while (ch != src.end() && grammar.skipper(*ch)) ++ch;
-	return ch == src.end();
+	if (ch == src.end()) {
+		return expr;
+	} else {
+		delete expr;
+		return nullptr;
+	}
 }
 
 }
