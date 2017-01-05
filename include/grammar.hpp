@@ -44,6 +44,21 @@ struct Nonterm : public Symb {
 	}
 };
 
+struct Iterate : public Symb {
+	vector<Symb*> vect;
+	Iterate(const Iterate&) = default;
+	Iterate(const string& n) : Symb(n) { }
+	virtual ~ Iterate() { }
+	virtual bool lexeme() const { return false; }
+	virtual string show() const { return name; }
+	virtual bool matches(Skipper*, StrIter&, StrIter) const { return false; }
+	virtual bool equals(const Symb* s) const {
+		if (const Iterate* it = dynamic_cast<const Iterate*>(s)) {
+			return name == it->name;
+		} else return false;
+	}
+};
+
 struct Keyword : public Lexeme {
 	string body;
 	Keyword(const Keyword& kw) = default;
@@ -63,6 +78,21 @@ struct Keyword : public Lexeme {
 		if (const Keyword* t = dynamic_cast<const Keyword*>(s)) {
 			return body == t->body;
 		} else return false;
+	}
+private :
+	void check(const string& w) {
+		if (w.length() != 1) return;
+		switch (w[0]) {
+			case '(' :
+			case ')' :
+			case '[' :
+			case ']' :
+			case '{' :
+			case '}' :
+				std::cerr << "illegal keyword name: " << w << std::endl;
+				throw std::exception();
+			default : break;
+		}
 	}
 };
 
@@ -100,6 +130,10 @@ struct Rule {
 
 	Semantic*      semantic;
 	Rule(const Rule&) = default;
+	Rule(const string& left, const string& right) :
+		left_str(left), right_str(), left(nullptr), right(), is_leaf(true), semantic(nullptr) {
+		right_str.push_back(right);
+	}
 	Rule(const string& left, const vector<string>& right) :
 		left_str(left), right_str(right), left(nullptr), right(), is_leaf(true), semantic(nullptr) { }
 	string show() const {

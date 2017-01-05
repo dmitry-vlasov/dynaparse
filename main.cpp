@@ -5,26 +5,30 @@ using namespace dynaparse;
 void test_grammar(Grammar& gr) {
 	gr
 	<< Nonterm("exp")
-	<< Keyword("(") << Keyword("+") << Keyword(")") << Keyword("*")
-	<< Rule("exp", {"(", "exp", "+", "exp", ")"})
-	<< Rule("exp", {"(", "exp", "*", "exp", ")"})
-	//<< Keyword("a") << Keyword("b")
-	//<< Rule("exp", {"a"})
-	//<< Rule("exp", {"b"})
+	<< Keyword("_(_", "(") << Keyword("_+_", "+") << Keyword("_)_", ")") << Keyword("_*_", "*")
+	<< Rule("exp", {"_(_", "exp", "_+_", "exp", "_)_"})
+	<< Rule("exp", {"_(_", "exp", "_*_", "exp", "_)_"})
 	<< Regexp("id", "[a-zA-Z]+")
-	<< Rule("exp", {"id"});
+	<< Rule("exp", vector<string>{"id"});
 }
 
-/*
-Grammar smm_grammar() {
-	Grammar gr;
-	gr << ("exp" << Rule() << "(" << "exp" << "*" << "exp" << ")");
-	gr << ("exp" << Rule() << "(" << "exp" << "+" << "exp" << ")");
-	gr << ("exp" << Rule() << "a");
-	gr << ("exp" << Rule() << "b");
-	return gr;
+void smm_grammar(Grammar& gr) {
+	gr
+	<< Nonterm("exp")
+	<< Keyword("(") << Keyword("+") << Keyword(")") << Keyword("*")
+
+	<< Rule("Module", "MODULE ident \";\" [ImportList] DeclSeq [BEGIN StatementSeq] END ident \".\"")
+//ImportList    = IMPORT [ident ":="] ident {"," [ident ":="] ident} ";".
+//DeclSeq       = { CONST {ConstDecl ";" } | TYPE {TypeDecl ";"} | VAR {VarDecl ";"}} {ProcDecl ";" | ForwardDecl ";"}.
+//ConstDecl     = IdentDef "=" ConstExpr.
+//TypeDecl      = IdentDef "=" Type.
+//VarDecl       = IdentList ":" Type.
+
+	<< Rule("exp", {"(", "exp", "+", "exp", ")"})
+	<< Rule("exp", {"(", "exp", "*", "exp", ")"})
+	<< Regexp("id", "[a-zA-Z]+")
+	<< Rule("exp", vector<string>{"id"});
 }
-*/
 
 int main(int argc, const char* argv[]) {
 	Grammar gr;
