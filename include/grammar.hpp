@@ -8,6 +8,10 @@ struct Grammar;
 typedef bool (Skipper) (char);
 typedef string::const_iterator StrIter;
 
+inline void skip(Skipper* skipper, StrIter& ch, StrIter end){
+	while (ch != end && skipper(*ch)) ++ch;
+}
+
 struct Symb {
 	string name;
 	Symb(const Symb&) = default;
@@ -48,7 +52,7 @@ struct Keyword : public Lexeme {
 	virtual ~Keyword() { }
 	virtual string show() const { return body; }
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const {
-		while (ch != end && skipper(*ch)) ++ch;
+		skip(skipper, ch, end);
 		StrIter x = body.begin();
 		for (; x != body.end() && ch != end; ++x, ++ch) {
 			if (*x != *ch) return false;
@@ -70,7 +74,7 @@ struct Regexp : public Lexeme {
 	virtual ~ Regexp() { }
 	virtual string show() const { return Symb::name; }
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const {
-		while (ch != end && skipper(*ch)) ++ch;
+		skip(skipper, ch, end);
 		std::smatch m;
 		bool ret = std::regex_search(ch, end, m, regexp, std::regex_constants::match_continuous);
 		if (ret) ch += m.length();
@@ -92,10 +96,12 @@ struct Rule {
 	vector<string> right_str;
 	Nonterm*       left;
 	vector<Symb*>  right;
+	bool           is_leaf;
+
 	Semantic*      semantic;
 	Rule(const Rule&) = default;
 	Rule(const string& left, const vector<string>& right) :
-		left_str(left), right_str(right), left(nullptr), right(), semantic(nullptr) { }
+		left_str(left), right_str(right), left(nullptr), right(), is_leaf(true), semantic(nullptr) { }
 	string show() const {
 		string ret = left->name + " = ";
 		for (auto s : right) ret += s->show() + " ";
@@ -110,15 +116,16 @@ inline Rule& operator << (Nonterm* nt, Rule&& r) {
 }
 
 struct Expr {
-	StrIter begin;
+	StrIter beg;
 	StrIter end;
-	Expr() : begin(), end(), rule(nullptr), nodes() { }
+	Expr() : beg(), end(), rule(nullptr), nodes() { }
 	virtual ~Expr() { for (Expr* e : nodes) delete e; }
 	const Rule*   rule;
 	vector<Expr*> nodes;
 	string show() const {
 		if (!rule) return "null";
 		string ret;
+		if (rule->is_leaf) return string(beg, end);
 		int i = 0;
 		for (auto p : rule->right) ret += p->lexeme() ? p->show() : nodes[i ++]->show();
 		return ret;
@@ -166,6 +173,7 @@ struct Grammar {
 		for (string& s : rule.right_str) {
 			if (nonterm_map.count(s)) {
 				rule.right.push_back(nonterm_map[s]);
+				rule.is_leaf = false;
 				continue;
 			}
 			if (keyword_map.count(s)) {

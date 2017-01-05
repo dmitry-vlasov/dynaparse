@@ -32,23 +32,24 @@ int main(int argc, const char* argv[]) {
 	Parser p(gr);
 	std::cout << p.getGrammar().show() << std::endl;
 
-	if (Expr* ex = p.parse("(a+b)", "exp")) {
+	string first = "(a+b)";
+	if (Expr* ex = p.parse(first, "exp")) {
 		std::cout << *ex << std::endl;
 		std::cout << "OK" << std::endl;
 	} else {
 		std::cout << "FUCK!!!" << std::endl;
 	}
 
-	if (Expr* ex = p.parse("   adgafgkDDFFDZ  ", "exp")) {
+	string sec = "   adgafgkDDFFDZ  ";
+	if (Expr* ex = p.parse(sec, "exp")) {
 		std::cout << *ex << std::endl;
 		std::cout << "OK" << std::endl;
 	} else {
 		std::cout << "FUCK!!!" << std::endl;
 	}
 
-
-
-	if (Expr* ex = p.parse(" ((  a * b) +    ( b*a))   ", "exp")) {
+	string third = " ((  a * (xyx + bcd)) +    ( b*a))   ";
+	if (Expr* ex = p.parse(third, "exp")) {
 		std::cout << *ex << std::endl;
 		std::cout << "OK" << std::endl;
 	} else {

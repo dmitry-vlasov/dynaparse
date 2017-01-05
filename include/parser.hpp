@@ -63,7 +63,7 @@ enum class Action { RET, BREAK, CONT };
 inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch, StrIter end, Skipper* skipper, Expr* t) {
 	if (const Rule* r = n.top()->rule) {
 		t->rule = r;
-		t->begin = beg;
+		t->beg = beg;
 		t->end = ch;
 		if (r->semantic) r->semantic(t, beg, ch);
 		return Action::RET;
@@ -78,6 +78,7 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch,
 
 inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& tree, bool initial = false) {
 	if (initial || !tree.size()) return nullptr;
+	skip(skipper, beg, end);
 	Expr* t = new Expr();
 	stack<MapIter> n;
 	stack<StrIter> m;
@@ -136,7 +137,7 @@ public :
 			n->rule = rule;
 		}
 	}
-	Expr* parse(const string& src, const string& type);
+	Expr* parse(string& src, const string& type);
 
 	const Grammar& getGrammar() const { return grammar; }
 private :
@@ -144,7 +145,7 @@ private :
 	map<string, parser::Tree> trees;
 };
 
-Expr* Parser::parse(const string& src, const string& type) {
+Expr* Parser::parse(string& src, const string& type) {
 	StrIter beg = src.begin();
 	if (Expr* expr = parse_LL(beg, src.end(), grammar.skipper, trees[type])) {
 		while (beg != src.end() && grammar.skipper(*beg)) ++beg;
