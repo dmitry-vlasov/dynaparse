@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <algorithm>
 #include <cassert>
+#include <regex>
 
 namespace dynaparse {
 
@@ -20,6 +21,7 @@ using std::ostream;
 using std::pair;
 using std::stack;
 using std::set;
+using std::regex;
 
 typedef uint32_t uint;
 
