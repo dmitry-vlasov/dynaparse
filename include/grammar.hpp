@@ -4,13 +4,23 @@
 
 namespace dynaparse {
 
+typedef bool (Skipper) (char);
+typedef string::const_iterator StrIter;
+
 struct Symb {
 	string body;
 	bool   term;
 	string show() const { return term ? "\"" + body + "\"" : body; }
+	bool matches(Skipper* skipper, StrIter ch, StrIter end) const {
+		assert(term);
+		while (ch != end && skipper(*ch)) ++ch;
+		StrIter x = body.begin();
+		for (; x != body.end() && ch != end; ++x, ++ch) {
+			if (*x != *ch) return false;
+		}
+		return ch != end || x == body.end();
+	}
 };
-
-typedef string::const_iterator StrIter;
 
 struct Expr;
 
@@ -52,8 +62,6 @@ struct Expr {
 ostream& operator << (ostream& os, const Expr& ex) {
 	os << ex.show(); return os;
 }
-
-typedef bool (Skipper) (char);
 
 struct Grammar {
 	vector<Rule> rules;

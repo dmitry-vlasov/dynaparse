@@ -11,27 +11,18 @@ typedef vector<Node> Tree;
 
 struct Node {
 	bool   final;
-	string body;
+	Symb*  symb;
 	Tree   next;
 	const Tree* tree;
 	const Rule* rule;
 
-	bool operator == (const string& s) const { return body == s; }
+	bool operator == (const string& s) const { return symb->body == s; }
 	bool operator != (const string& s) const { return !operator == (s); }
-	bool matches(Skipper* skipper, StrIter ch, StrIter end) const {
-		assert(!tree);
-		while (ch != end && skipper(*ch)) ++ch;
-		StrIter x = body.begin();
-		for (; x != body.end() && ch != end; ++x, ++ch) {
-			if (*x != *ch) return false;
-		}
-		return ch != end || x == body.end();
-	}
 };
 
 inline Node createNode(map<string, Tree>& trees, Skipper* skipper, Symb& s) {
 	Node n;
-	n.body = s.body;
+	n.symb = &s;
 	n.rule = nullptr;
 	n.tree = nullptr;
 	s.term = true;
@@ -109,7 +100,7 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 			} else {
 				childnodes.pop();
 			}
-		} else if (n.top()->matches(skipper, m.top(), end)) {
+		} else if (n.top()->symb->matches(skipper, m.top(), end)) {
 			switch (act(n, m, beg, m.top(), end, skipper, t)) {
 			case Action::RET  : beg = m.top(); return t;
 			case Action::BREAK: goto out;

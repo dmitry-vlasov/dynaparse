@@ -11,6 +11,15 @@ Grammar test_grammar() {
 	return gr;
 }
 
+Grammar smm_grammar() {
+	Grammar gr;
+	gr << ("exp" << Rule() << "(" << "exp" << "*" << "exp" << ")");
+	gr << ("exp" << Rule() << "(" << "exp" << "+" << "exp" << ")");
+	gr << ("exp" << Rule() << "a");
+	gr << ("exp" << Rule() << "b");
+	return gr;
+}
+
 
 int main(int argc, const char* argv[]) {
 	Parser p(test_grammar());
