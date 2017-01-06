@@ -4,16 +4,6 @@
 
 namespace dynaparse {
 
-Rule::Rule(const string& name, const string& left, const string& right) :
-	Syntagma(name),
-	left_str(left), right_str(), left(nullptr), right(), is_leaf(true), semantic(nullptr) {
-	std::stringstream ss(right);
-    std::string item;
-    while (std::getline(ss, item, ' ')) {
-        right_str.push_back(item);
-    }
-}
-
 Grammar& Grammar::operator << (const Rule& r) {
 	rules.push_back(new Rule(r));
 

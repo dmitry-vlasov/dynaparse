@@ -127,19 +127,40 @@ struct Regexp : public Lexeme {
 
 struct Rule : public Syntagma {
 	string         left_str;
-	vector<string> right_str;
 	Nonterm*       left;
-	vector<Syntagma*>  right;
-	bool           is_leaf;
 	Semantic*      semantic;
 
 	Rule(const string& name) :
-		Syntagma(name), left_str(), right_str(), left(nullptr), right(), is_leaf(true), semantic(nullptr) { }
+		Syntagma(name), left_str(), left(nullptr), semantic(nullptr) { }
 	Rule(const Rule&) = default;
-	Rule(const string& name, const string& left, const string& right);
-	Rule(const string& name, const string& left, const vector<string>& right) : Syntagma(name),
-		left_str(left), right_str(right), left(nullptr), right(), is_leaf(true), semantic(nullptr) { }
+	Rule(const string& name, const string& left) : Syntagma(name),
+		left_str(left), left(nullptr), semantic(nullptr) { }
 	virtual bool lexeme() const { return false; }
+	virtual string show() const = 0;
+	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const = 0;
+	virtual bool equals(const Syntagma* s) const = 0;
+};
+
+bool Syntagma::rule() const { return dynamic_cast<const Rule*>(this); }
+
+struct Seq : public Rule {
+	vector<string> right_str;
+	vector<Syntagma*> right;
+	bool is_leaf;
+
+	Seq(const string& name) :
+		Rule(name), right_str(), right(), is_leaf(true) { }
+	Seq(const Seq&) = default;
+	Seq(const string& name, const string& left, const string& right) : Rule(name, left),
+			right_str(), right(), is_leaf(true) {
+		std::stringstream ss(right);
+		std::string item;
+		while (std::getline(ss, item, ' ')) {
+			right_str.push_back(item);
+		}
+	}
+	Seq(const string& name, const string& left, const vector<string>& right) : Rule(name, left),
+		right_str(right), right(), is_leaf(true) { }
 	virtual string show() const {
 		string ret = left->name + " = ";
 		for (auto s : right) ret += s->show() + " ";
@@ -149,13 +170,13 @@ struct Rule : public Syntagma {
 		return false; // ???
 	}
 	virtual bool equals(const Syntagma* s) const {
-		if (const Rule* r = dynamic_cast<const Rule*>(s)) {
-			return name == r->name;
+		if (const Seq* sq = dynamic_cast<const Seq*>(s)) {
+			return name == sq->name;
 		} else return false;
 	}
 };
 
-bool Syntagma::rule() const { return dynamic_cast<const Rule*>(this); }
+
 
 } // namespace synt
 
@@ -165,7 +186,7 @@ typedef synt::Keyword Keyword;
 typedef synt::Regexp Regexp;
 typedef synt::Nonterm Nonterm;
 typedef synt::Empty Empty;
-typedef synt::Rule Rule;
+typedef synt::Seq Rule;
 
 
 inline Rule& operator << (Nonterm* nt, Rule&& r) {
