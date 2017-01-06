@@ -21,7 +21,7 @@ struct Seq : public Expr {
 			return string(beg, end);
 		}
 		int i = 0;
-		for (auto p : rule->right)
+		for (auto p : rule->right) {
 			if (const Keyword* kw = dynamic_cast<const Keyword*>(p)) {
 				ret += kw->body;
 			} else if (const Regexp* re = dynamic_cast<const Regexp*>(p)) {
@@ -29,29 +29,39 @@ struct Seq : public Expr {
 			} else {
 				ret += nodes[i ++]->show();
 			}
+		}
 		return ret;
 	}
 };
 
-/*
 struct Iter : public Expr {
-	Iter() : Expr(), nodes() { }
+	Iter() : Expr(), nodes(), rule(nullptr) { }
 	virtual ~Iter() { for (Expr* e : nodes) delete e; }
 	vector<Expr*> nodes;
+	const synt::Iter* rule;
 	virtual string show() const {
 		if (!rule) return "null";
 		string ret;
 		if (rule->is_leaf) return string(beg, end);
 		int i = 0;
-		for (auto p : rule->right) ret += p->lexeme() ? p->show() : nodes[i ++]->show();
+		for (auto p : rule->right) {
+			if (const Keyword* kw = dynamic_cast<const Keyword*>(p)) {
+				ret += kw->body;
+			} else if (const Regexp* re = dynamic_cast<const Regexp*>(p)) {
+				ret += re->name;
+			} else {
+				ret += nodes[i ++]->show();
+			}
+		}
 		return ret;
 	}
 };
 
 struct Alter : public Expr {
-	Alter() : Expr(), node(nullptr) { }
+	Alter() : Expr(), node(nullptr), rule(nullptr) { }
 	virtual ~Alter() { if (node) delete node; }
 	Expr* node;
+	const synt::Alter* rule;
 	virtual string show() const {
 		if (!rule) return "null";
 		string ret;
@@ -60,7 +70,21 @@ struct Alter : public Expr {
 		return ret;
 	}
 };
-*/
+
+struct Opt : public Expr {
+	Opt() : Expr(), node(nullptr), rule(nullptr) { }
+	virtual ~Opt() { if (node) delete node; }
+	Expr* node;
+	const synt::Opt* rule;
+	virtual string show() const {
+		if (!rule) return "null";
+		string ret;
+		if (rule->is_leaf) return string(beg, end);
+		if (node) ret += node->show();
+		return ret;
+	}
+};
+
 } // namespace expr
 
 ostream& operator << (ostream& os, const Expr& ex) {
