@@ -4,6 +4,8 @@
 #include <set>
 #include <vector>
 #include <stack>
+#include <queue>
+
 #include <utility>
 #include <iostream>
 #include <unistd.h>
@@ -22,6 +24,7 @@ using std::pair;
 using std::stack;
 using std::set;
 using std::regex;
+using std::queue;
 
 typedef uint32_t uint;
 
