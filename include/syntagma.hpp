@@ -11,6 +11,11 @@ inline void skip(Skipper* skipper, StrIter& ch, StrIter end){
 	while (ch != end && skipper(*ch)) ++ch;
 }
 
+struct Expr;
+typedef Expr* (Semantic) (vector<Expr*>&);
+
+namespace synt {
+
 struct Syntagma {
 	string name;
 	Syntagma(const Syntagma&) = default;
@@ -120,10 +125,6 @@ struct Regexp : public Lexeme {
 	}
 };
 
-
-struct Expr;
-typedef Expr* (Semantic) (vector<Expr*>&);
-
 struct Rule : public Syntagma {
 	string         left_str;
 	vector<string> right_str;
@@ -155,6 +156,17 @@ struct Rule : public Syntagma {
 };
 
 bool Syntagma::rule() const { return dynamic_cast<const Rule*>(this); }
+
+} // namespace synt
+
+typedef synt::Syntagma Syntagma;
+typedef synt::Lexeme Lexeme;
+typedef synt::Keyword Keyword;
+typedef synt::Regexp Regexp;
+typedef synt::Nonterm Nonterm;
+typedef synt::Empty Empty;
+typedef synt::Rule Rule;
+
 
 inline Rule& operator << (Nonterm* nt, Rule&& r) {
 	r.right.clear();
