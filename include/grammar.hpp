@@ -81,6 +81,21 @@ private :
 	}
 };
 
+struct Empty : public Lexeme {
+	Empty(const Empty&) = default;
+	Empty() : Lexeme("") { }
+	virtual ~Empty() { }
+	virtual string show() const { return ""; }
+	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const {
+		skip(skipper, ch, end);
+		return true;
+	}
+	virtual bool equals(const Symb* s) const {
+		return dynamic_cast<const Empty*>(s);
+	}
+};
+
+
 struct Regexp : public Lexeme {
 	string body;
 	regex  regexp;

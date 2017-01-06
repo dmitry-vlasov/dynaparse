@@ -33,6 +33,15 @@ void oberon_grammar(Grammar& gr) {
 	//Rule("ImportList", "IMPORT" <<  _[ ident := ]_ ident _{ , _[ ident := ]_ ident }_ ;")
 }
 
+/*   Rule("source", Seq( { node } < add_node )  )
+ *   Rule("node", Seq( const | assert | include | comment ) )
+ *   Rule("comment", Seq( "$(", comment-string ,"$)"))
+ *   Rule("")
+ *
+ *
+ *
+ */
+
 int main(int argc, const char* argv[]) {
 	Grammar gr;
 	test_grammar(gr);
