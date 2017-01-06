@@ -5,7 +5,7 @@
 namespace dynaparse {
 
 Rule::Rule(const string& name, const string& left, const string& right) :
-	Symb(name),
+	Syntagma(name),
 	left_str(left), right_str(), left(nullptr), right(), is_leaf(true), semantic(nullptr) {
 	std::stringstream ss(right);
     std::string item;

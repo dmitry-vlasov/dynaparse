@@ -13,12 +13,12 @@ typedef vector<Node> Tree;
 struct Node {
 	bool   final;
 	Tree   next;
-	const Symb* symb;
+	const Syntagma* symb;
 	const Tree* tree;
 	const Rule* rule;
 };
 
-inline Node createNode(map<string, Tree>& trees, Skipper* skipper, const Symb* s) {
+inline Node createNode(map<string, Tree>& trees, Skipper* skipper, const Syntagma* s) {
 	Node n;
 	n.symb = s;
 	n.rule = nullptr;
@@ -32,11 +32,11 @@ inline Node createNode(map<string, Tree>& trees, Skipper* skipper, const Symb* s
 	return n;
 }
 
-inline Node* add(map<string, Tree>& trees, Skipper* skipper, Tree& tree, vector<Symb*>& ex) {
+inline Node* add(map<string, Tree>& trees, Skipper* skipper, Tree& tree, vector<Syntagma*>& ex) {
 	assert(ex.size());
 	Tree* m = &tree;
 	Node* n = nullptr;
-	for (Symb* s : ex) {
+	for (Syntagma* s : ex) {
 		bool new_symb = true;
 		for (Node& p : *m) {
 			if (p.symb->equals(s)) {
