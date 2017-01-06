@@ -3,22 +3,22 @@
 #include "grammar.hpp"
 
 namespace dynaparse {
-
-Grammar& Grammar::operator << (const Rule& r) {
-	rules.push_back(new Rule(r));
+/*
+Grammar& Grammar::operator << (Rule* r) {
+	rules.push_back(r);
 
 	/*while (Rule* x = extract(r)) {
 		q.push(r);
 		q.push(x);
-	}*/
+	}*
 
 
-	Rule& rule = *rules.back();
-	if (!nonterm_map.count(rule.left_str)) {
-		std::cerr << "undefined non-terminal: " << rule.left_str << std::endl;
+	Rule* rule = rules.back();
+	if (!nonterm_map.count(rule->left_str)) {
+		std::cerr << "undefined non-terminal: " << rule->left_str << std::endl;
 		throw std::exception();
 	}
-	rule.left = nonterm_map[rule.left_str];
+	rule->left = nonterm_map[rule->left_str];
 	for (string& s : rule.right_str) {
 		if (nonterm_map.count(s)) {
 			rule.right.push_back(nonterm_map[s]);
@@ -91,5 +91,6 @@ void Grammar::parse_EBNF() {
 	}
 
 }
+*/
 
 }

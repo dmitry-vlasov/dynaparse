@@ -1,55 +1,64 @@
 #pragma once
 
-#include "syntagma.hpp"
+#include "std.hpp"
 
 namespace dynaparse {
 
+typedef bool (Skipper) (char);
+typedef string::const_iterator StrIter;
+
+inline void skip(Skipper* skipper, StrIter& ch, StrIter end){
+	while (ch != end && skipper(*ch)) ++ch;
+}
+
+struct Expr {
+	StrIter beg;
+	StrIter end;
+	Expr() : beg(), end() { }
+	Expr(StrIter b, StrIter e) : beg(b), end(e) { }
+	virtual ~Expr() {  }
+	virtual string show() const  = 0;
+};
+
+typedef Expr* (Semantic) (vector<Expr*>&);
+
+struct Grammar;
+
+struct Syntagma {
+	string name;
+	Syntagma(const Syntagma&) = default;
+	Syntagma(const string& n) : name(n) { }
+	virtual ~ Syntagma() { }
+	virtual string show() const = 0;
+	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  = 0;
+	virtual bool equals(const Syntagma*) const = 0;
+	virtual void complete(Grammar*) { }
+};
+
 struct Grammar {
-	map<string, Keyword*> keyword_map;
-	map<string, Regexp*>  regexp_map;
-	map<string, Nonterm*> nonterm_map;
+	map<string, Syntagma*> synt_map;
+	vector<Syntagma*>      syntagmas;
+	Skipper*               skipper;
 
-	vector<Keyword*> keywords;
-	vector<Regexp*>  regexps;
-	vector<Nonterm*> nonterms;
-	vector<Rule*>    rules;
+	Grammar& operator << (Syntagma* s) {
+		syntagmas.push_back(s);
+		synt_map[s->name] = s;
+		s->complete(this);
+		return *this;
+	}
 
-	Skipper*     skipper;
-	Grammar& operator << (const Keyword& kw) {
-		keywords.push_back(new Keyword(kw));
-		keyword_map[kw.name] = keywords.back();
-		return *this;
-	}
-	Grammar& operator << (const Regexp& re) {
-		regexps.push_back(new Regexp(re));
-		regexp_map[re.name] = regexps.back();
-		return *this;
-	}
-	Grammar& operator << (const Nonterm& nt) {
-		nonterms.push_back(new Nonterm(nt));
-		nonterm_map[nt.name] = nonterms.back();
-		return *this;
-	}
-	Grammar& operator << (const Rule& r);
 	string show() const {
 		string ret;
-		ret += "Grammar rules:\n";
-		for (auto& r : rules) ret += r->show() + "\n";
+		ret += "Grammar syntagmas:\n";
+		for (auto s : syntagmas) ret += s->show() + "\n";
 		ret += "\n";
 		return ret;
 	}
-	Grammar() : rules(), skipper([](char c)->bool {return c <= ' '; }), c(0) { }
-	~Grammar() {
-		for (Rule* r : rules) delete r;
-		for (Keyword* kw : keywords) delete kw;
-		for (Nonterm* nt : nonterms) delete nt;
-		for (Regexp* re : regexps) delete re;
-	}
+	Grammar() : synt_map(), syntagmas(), skipper([](char c)->bool {return c <= ' '; }), c(0) { }
+	~Grammar() { for (Syntagma* s : syntagmas) delete s; }
+
 private :
 	int c;
-	void parse_EBNF();
-	string new_non_term();
-	Rule* extract(Rule* r);
 };
 
 }

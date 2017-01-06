@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ebnf.hpp"
+#include "syntagma.hpp"
 #include "expr.hpp"
 
 namespace dynaparse {
@@ -23,8 +23,7 @@ inline Node createNode(map<string, Tree>& trees, Skipper* skipper, const Syntagm
 	n.symb = s;
 	n.rule = nullptr;
 	n.tree = nullptr;
-	if (!s->lexeme()) {
-		const Nonterm* nt = dynamic_cast<const Nonterm*>(s);
+	if (const Nonterm* nt = dynamic_cast<const Nonterm*>(s)) {
 		assert(nt && "must be non-terminal");
 		assert(trees.count(nt->name) && "non-terminal is not declared");
 		n.tree = &trees.at(nt->name);
@@ -61,12 +60,9 @@ typedef Tree::const_iterator MapIter;
 
 enum class Action { RET, BREAK, CONT };
 
-inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch, StrIter end, Skipper* skipper, Expr* t) {
+inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch, StrIter end, Skipper* skipper, const Rule*& rule) {
 	if (const Rule* r = n.top()->rule) {
-		t->rule = r;
-		t->beg = beg;
-		t->end = ch;
-		//if (r->semantic) r->semantic(t);
+		rule = r;
 		return Action::RET;
 	} else if (ch == end)
 		return Action::BREAK;
@@ -80,30 +76,34 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch,
 inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& tree, bool initial = false) {
 	if (initial || !tree.size()) return nullptr;
 	skip(skipper, beg, end);
-	Expr* t = new Expr();
+
+	vector<Expr*> children;
+	const Rule* rule = nullptr;
+
 	stack<MapIter> n;
 	stack<StrIter> m;
 	stack<MapIter> childnodes;
 	n.push(tree.begin());
 	m.push(beg);
+	StrIter ch = beg;
 	while (!n.empty() && !m.empty()) {
-		StrIter ch = m.top();
+		ch = m.top();
 		if (const Tree* deeper = n.top()->tree) {
 			childnodes.push(n.top());
 			if (Expr* child = parse_LL(ch, end, skipper, *deeper, n.top() == tree.begin())) {
-				t->nodes.push_back(child);
-				switch (act(n, m, beg, ch, end, skipper, t)) {
-				case Action::RET  : beg = ch; return t;
-				case Action::BREAK: goto out;
+				children.push_back(child);
+				switch (act(n, m, beg, ch, end, skipper, rule)) {
+				case Action::RET  : beg = ch; return new expr::Seq(beg, ch, rule, children);
+				case Action::BREAK: return nullptr;
 				case Action::CONT : continue;
 				}
 			} else {
 				childnodes.pop();
 			}
 		} else if (n.top()->symb->matches(skipper, ch, end)) {
-			switch (act(n, m, beg, ch, end, skipper, t)) {
-			case Action::RET  : beg = ch; return t;
-			case Action::BREAK: goto out;
+			switch (act(n, m, beg, ch, end, skipper, rule)) {
+			case Action::RET  : beg = ch; return new expr::Seq(beg, ch, rule, children);
+			case Action::BREAK: return nullptr;
 			case Action::CONT : continue;
 			}
 		}
@@ -111,16 +111,14 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 			n.pop();
 			m.pop();
 			if (!childnodes.empty() && childnodes.top() == n.top()) {
-				delete t->nodes.back();
-				t->nodes.pop_back();
+				delete children.back();
+				children.pop_back();
 				childnodes.pop();
 			}
-			if (n.empty() || m.empty()) goto out;
+			if (n.empty() || m.empty()) return nullptr;
 		}
 		++n.top();
 	}
-	out :
-	delete t;
 	return nullptr;
 }
 
@@ -129,13 +127,17 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 class Parser {
 public :
 	Parser(Grammar& gr) : grammar(gr), trees() {
-		for (Rule* rule : grammar.rules) {
-			trees[rule->left->name];
+		for (Syntagma* s : grammar.syntagmas) {
+			if (Rule* rule = dynamic_cast<Rule*>(s)) {
+				trees[rule->left->name];
+			}
 		}
-		for (Rule* rule : grammar.rules) {
-			parser::Tree& tree = trees[rule->left->name];
-			parser::Node* n = add(trees, gr.skipper, tree, rule->right);
-			n->rule = rule;
+		for (Syntagma* s : grammar.syntagmas) {
+			if (Rule* rule = dynamic_cast<Rule*>(s)) {
+				parser::Tree& tree = trees[rule->left->name];
+				parser::Node* n = add(trees, gr.skipper, tree, rule->right);
+				n->rule = rule;
+			}
 		}
 	}
 	Expr* parse(string& src, const string& type);

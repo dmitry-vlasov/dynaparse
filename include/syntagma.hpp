@@ -1,41 +1,14 @@
 #pragma once
 
-#include "std.hpp"
+#include "grammar.hpp"
 
 namespace dynaparse {
-
-typedef bool (Skipper) (char);
-typedef string::const_iterator StrIter;
-
-inline void skip(Skipper* skipper, StrIter& ch, StrIter end){
-	while (ch != end && skipper(*ch)) ++ch;
-}
-
-struct Expr;
-typedef Expr* (Semantic) (vector<Expr*>&);
-
 namespace synt {
-
-struct Syntagma {
-	string name;
-	Syntagma(const Syntagma&) = default;
-	Syntagma(const string& n) : name(n) { }
-	virtual ~ Syntagma() { }
-	virtual string show() const = 0;
-	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  = 0;
-	virtual bool equals(const Syntagma*) const = 0;
-
-	bool lexeme() const;
-	bool nonterm() const;
-	bool rule() const;
-};
 
 struct Lexeme : public Syntagma {
 	Lexeme(const Lexeme&) = default;
 	Lexeme(const string& n) : Syntagma(n) { }
 };
-
-bool Syntagma::lexeme() const { return dynamic_cast<const Lexeme*>(this); }
 
 struct Nonterm : public Syntagma {
 	Nonterm(const Nonterm& nt) = default;
@@ -49,8 +22,6 @@ struct Nonterm : public Syntagma {
 		} else return false;
 	}
 };
-
-bool Syntagma::nonterm() const { return dynamic_cast<const Nonterm*>(this); }
 
 struct Keyword : public Lexeme {
 	string body;
@@ -128,39 +99,58 @@ struct Regexp : public Lexeme {
 struct Rule : public Syntagma {
 	string         left_str;
 	Nonterm*       left;
-	Semantic*      semantic;
-
-	Rule(const string& name) :
-		Syntagma(name), left_str(), left(nullptr), semantic(nullptr) { }
-	Rule(const Rule&) = default;
-	Rule(const string& name, const string& left) : Syntagma(name),
-		left_str(left), left(nullptr), semantic(nullptr) { }
-	virtual bool lexeme() const { return false; }
-	virtual string show() const = 0;
-	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const = 0;
-	virtual bool equals(const Syntagma* s) const = 0;
-};
-
-bool Syntagma::rule() const { return dynamic_cast<const Rule*>(this); }
-
-struct Seq : public Rule {
 	vector<string> right_str;
 	vector<Syntagma*> right;
 	bool is_leaf;
+	Semantic*      semantic;
 
-	Seq(const string& name) :
-		Rule(name), right_str(), right(), is_leaf(true) { }
-	Seq(const Seq&) = default;
-	Seq(const string& name, const string& left, const string& right) : Rule(name, left),
-			right_str(), right(), is_leaf(true) {
+	Rule(const string& name) :
+		Syntagma(name), left_str(), left(nullptr), right_str(), right(), is_leaf(true), semantic(nullptr) { }
+	Rule(const Rule&) = default;
+	Rule(const string& name, const string& left, const string& right) : Syntagma(name),
+		left_str(left), left(nullptr), right_str(), right(), is_leaf(true), semantic(nullptr) {
 		std::stringstream ss(right);
 		std::string item;
 		while (std::getline(ss, item, ' ')) {
 			right_str.push_back(item);
 		}
 	}
-	Seq(const string& name, const string& left, const vector<string>& right) : Rule(name, left),
-		right_str(right), right(), is_leaf(true) { }
+	Rule(const string& name, const string& left, const vector<string>& right) : Syntagma(name),
+		left_str(left), left(nullptr), right_str(right), right(), is_leaf(true), semantic(nullptr) { }
+	virtual bool lexeme() const { return false; }
+	virtual string show() const = 0;
+	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const = 0;
+	virtual bool equals(const Syntagma* s) const = 0;
+	virtual void complete(Grammar* grammar) {
+		if (!grammar->synt_map.count(left_str)) {
+			std::cerr << "undefined non-terminal: " << left_str << std::endl;
+			throw std::exception();
+		}
+		if (Nonterm* nt = dynamic_cast<Nonterm*>(grammar->synt_map[left_str])) {
+			left = nt;
+		} else {
+			std::cerr << "symbol " << left_str << " is not non-terminal: " << std::endl;
+			throw std::exception();
+		}
+		for (string& s : right_str) {
+			if (grammar->synt_map.count(s)) {
+				Syntagma* ss = grammar->synt_map[s];
+				right.push_back(ss);
+				is_leaf = dynamic_cast<Rule*>(ss);
+			} else {
+				std::cerr << "undefined symbol: " << s << std::endl;
+				throw std::exception();
+			}
+		}
+	}
+};
+
+struct Seq : public Rule {
+	//Seq(const string& name) :
+	//	Rule(name) { }
+	Seq(const Seq&) = default;
+	Seq(const string& name, const string& left, const string& right) : Rule(name, left, right) { }
+	Seq(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
 	virtual string show() const {
 		string ret = left->name + " = ";
 		for (auto s : right) ret += s->show() + " ";
@@ -176,23 +166,17 @@ struct Seq : public Rule {
 	}
 };
 
-
-
 } // namespace synt
 
-typedef synt::Syntagma Syntagma;
 typedef synt::Lexeme Lexeme;
 typedef synt::Keyword Keyword;
 typedef synt::Regexp Regexp;
 typedef synt::Nonterm Nonterm;
 typedef synt::Empty Empty;
-typedef synt::Seq Rule;
+typedef synt::Rule Rule;
 
-
-inline Rule& operator << (Nonterm* nt, Rule&& r) {
-	r.right.clear();
-	r.left = nt;
-	return r;
-}
+inline bool is_lexeme(Syntagma* s) { return dynamic_cast<const synt::Lexeme*>(s); }
+inline bool is_nonterm(Syntagma* s) { return dynamic_cast<const synt::Nonterm*>(s); }
+inline bool is_rule(Syntagma* s) { return dynamic_cast<const synt::Rule*>(s); }
 
 }

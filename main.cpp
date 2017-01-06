@@ -4,14 +4,15 @@ using namespace dynaparse;
 
 void test_grammar(Grammar& gr) {
 	gr
-	<< Nonterm("exp")
-	<< Keyword("_(_", "(") << Keyword("_+_", "+") << Keyword("_)_", ")") << Keyword("_*_", "*")
-	<< Rule("plus", "exp", {"_(_", "exp", "_+_", "exp", "_)_"})
-	<< Rule("plus", "exp", {"_(_", "exp", "_*_", "exp", "_)_"})
-	<< Regexp("id", "[a-zA-Z]+")
-	<< Rule("ident", "exp", vector<string>{"id"});
+	<< new Nonterm("exp")
+	<< new Keyword("_(_", "(") << new Keyword("_+_", "+") << new Keyword("_)_", ")") << new Keyword("_*_", "*")
+	<< new synt::Seq("plus", "exp", {"_(_", "exp", "_+_", "exp", "_)_"})
+	<< new synt::Seq("plus", "exp", {"_(_", "exp", "_*_", "exp", "_)_"})
+	<< new Regexp("id", "[a-zA-Z]+")
+	<< new synt::Seq("ident", "exp", vector<string>{"id"});
 }
 
+/*
 void oberon_grammar(Grammar& gr) {
 	gr
 	<< Nonterm("exp")
@@ -32,7 +33,7 @@ void oberon_grammar(Grammar& gr) {
 
 	//Rule("ImportList", "IMPORT" <<  _[ ident := ]_ ident _{ , _[ ident := ]_ ident }_ ;")
 }
-
+*/
 /*   Rule("source", Seq( { node } < add_node )  )
  *   Rule("node", Seq( const | assert | include | comment ) )
  *   Rule("comment", Seq( "$(", comment-string ,"$)"))
