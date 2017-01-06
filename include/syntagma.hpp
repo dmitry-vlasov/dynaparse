@@ -43,21 +43,6 @@ struct Keyword : public Lexeme {
 			return body == t->body;
 		} else return false;
 	}
-private :
-	void check(const string& w) {
-		if (w.length() != 1) return;
-		switch (w[0]) {
-			case '(' :
-			case ')' :
-			case '[' :
-			case ']' :
-			case '{' :
-			case '}' :
-				std::cerr << "illegal keyword name: " << w << std::endl;
-				throw std::exception();
-			default : break;
-		}
-	}
 };
 
 struct Empty : public Lexeme {

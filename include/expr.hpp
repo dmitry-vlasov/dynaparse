@@ -8,11 +8,11 @@ namespace expr {
 struct Seq : public Expr {
 	Seq(const StrIter beg, StrIter end, const Rule* r, vector<Expr*> v) :
 		Expr(beg, end), nodes(new Expr*[v.size()]), size(v.size()), rule(dynamic_cast<const synt::Seq*>(r)) {
-		for (uint i = 0; i < size; ++ i) nodes[i] = v[i];
+		for (int i = 0; i < size; ++ i) nodes[i] = v[i];
 	}
-	virtual ~Seq() { for (uint i = 0; i < size; ++ i) delete nodes[i]; }
+	virtual ~Seq() { for (int i = 0; i < size; ++ i) delete nodes[i]; }
 	Expr** nodes;
-	uint   size;
+	int    size;
 	const synt::Seq* rule;
 	virtual string show() const {
 		if (!rule) return "null";

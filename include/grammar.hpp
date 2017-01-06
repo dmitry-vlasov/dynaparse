@@ -37,6 +37,7 @@ struct Syntagma {
 };
 
 struct Grammar {
+	string                 name;
 	map<string, Syntagma*> synt_map;
 	vector<Syntagma*>      syntagmas;
 	Skipper*               skipper;
@@ -50,12 +51,13 @@ struct Grammar {
 
 	string show() const {
 		string ret;
-		ret += "Grammar syntagmas:\n";
+		ret += "Grammar " + name + "\n";
+		ret += "--------------------\n";
 		for (auto s : syntagmas) ret += s->show_def() + "\n";
 		ret += "\n";
 		return ret;
 	}
-	Grammar() : synt_map(), syntagmas(), skipper([](char c)->bool {return c <= ' '; }), c(0) { }
+	Grammar(const string& n) : name(n), synt_map(), syntagmas(), skipper([](char c)->bool {return c <= ' '; }), c(0) { }
 	~Grammar() { for (Syntagma* s : syntagmas) delete s; }
 
 private :

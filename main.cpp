@@ -44,7 +44,7 @@ void oberon_grammar(Grammar& gr) {
  */
 
 int main(int argc, const char* argv[]) {
-	Grammar gr;
+	Grammar gr("test");
 	test_grammar(gr);
 	Parser p(gr);
 	std::cout << p.getGrammar().show() << std::endl;
