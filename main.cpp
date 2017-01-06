@@ -10,6 +10,9 @@ void test_grammar(Grammar& gr) {
 	<< new synt::Seq("plus", "exp", {"(", "exp", "*", "exp", ")"})
 	<< new Regexp("id", "[a-zA-Z]+")
 	<< new synt::Seq("ident", "exp", vector<string>{"id"});
+
+
+	//gr << new synt::Seq("AAA", "exp", {synt::Seq()});
 }
 
 /*

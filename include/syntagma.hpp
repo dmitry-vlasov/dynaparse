@@ -102,6 +102,10 @@ struct Rule : public Syntagma {
 	}
 	Rule(const string& name, const string& left, const vector<string>& right) : Syntagma(name),
 		left_str(left), left(nullptr), right_str(right), right(), is_leaf(true), semantic(nullptr) { }
+
+	Rule(const string& name, const string& left, const vector<Syntagma*>& right) : Syntagma(name),
+		left_str(left), left(nullptr), right_str(), right(right), is_leaf(true), semantic(nullptr) { }
+
 	virtual bool lexeme() const { return false; }
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const = 0;
 	virtual bool equals(const Syntagma* s) const = 0;
@@ -137,6 +141,72 @@ struct Seq : public Rule {
 	Seq(const Seq&) = default;
 	Seq(const string& name, const string& left, const string& right) : Rule(name, left, right) { }
 	Seq(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	virtual string show_def() const {
+		string ret = "Sequental rule: " + left->name + " = ";
+		for (auto s : right) ret += s->show_ref() + " ";
+		return ret;
+	}
+	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  {
+		return false; // ???
+	}
+	virtual bool equals(const Syntagma* s) const {
+		if (const Seq* sq = dynamic_cast<const Seq*>(s)) {
+			return name == sq->name;
+		} else return false;
+	}
+};
+
+struct Iter : public Rule {
+	//Seq(const string& name) :
+	//	Rule(name) { }
+	Iter(const Iter&) = default;
+	Iter(const string& name, const string& left, const string& right) :
+		Rule(name, left, vector<string>{right}) { }
+	Iter(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	virtual string show_def() const {
+		string ret = "Sequental rule: " + left->name + " = ";
+		for (auto s : right) ret += s->show_ref() + " ";
+		return ret;
+	}
+	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  {
+		return false; // ???
+	}
+	virtual bool equals(const Syntagma* s) const {
+		if (const Seq* sq = dynamic_cast<const Seq*>(s)) {
+			return name == sq->name;
+		} else return false;
+	}
+};
+
+struct Alter : public Rule {
+	//Seq(const string& name) :
+	//	Rule(name) { }
+	Alter(const Alter&) = default;
+	Alter(const string& name, const string& left, const string& right) :
+		Rule(name, left, vector<string>{right}) { }
+	Alter(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	virtual string show_def() const {
+		string ret = "Sequental rule: " + left->name + " = ";
+		for (auto s : right) ret += s->show_ref() + " ";
+		return ret;
+	}
+	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  {
+		return false; // ???
+	}
+	virtual bool equals(const Syntagma* s) const {
+		if (const Seq* sq = dynamic_cast<const Seq*>(s)) {
+			return name == sq->name;
+		} else return false;
+	}
+};
+
+struct Opt : public Rule {
+	//Seq(const string& name) :
+	//	Rule(name) { }
+	Opt(const Opt&) = default;
+	Opt(const string& name, const string& left, const string& right) :
+		Rule(name, left, vector<string>{right}) { }
+	Opt(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
 	virtual string show_def() const {
 		string ret = "Sequental rule: " + left->name + " = ";
 		for (auto s : right) ret += s->show_ref() + " ";
