@@ -106,6 +106,9 @@ struct Rule : public Syntagma {
 	Rule(const string& name, const string& left, const vector<Syntagma*>& right) : Syntagma(name),
 		left_str(left), left(nullptr), right_str(), right(right), is_leaf(true), semantic(nullptr) { }
 
+	Rule(const vector<Syntagma*>& right) : Syntagma(""),
+		left_str(), left(nullptr), right_str(), right(right), is_leaf(true), semantic(nullptr) { }
+
 	virtual bool lexeme() const { return false; }
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const = 0;
 	virtual bool equals(const Syntagma* s) const = 0;
@@ -141,6 +144,8 @@ struct Seq : public Rule {
 	Seq(const Seq&) = default;
 	Seq(const string& name, const string& left, const string& right) : Rule(name, left, right) { }
 	Seq(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	Seq(const string& name, const string& left, const vector<Syntagma*>& right) : Rule(name, left, right) { }
+	Seq(const vector<Syntagma*>& right) : Rule(right) { }
 	virtual string show_def() const {
 		string ret = "Sequental rule: " + left->name + " = ";
 		for (auto s : right) ret += s->show_ref() + " ";
@@ -163,6 +168,7 @@ struct Iter : public Rule {
 	Iter(const string& name, const string& left, const string& right) :
 		Rule(name, left, vector<string>{right}) { }
 	Iter(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	Iter(const vector<Syntagma*>& right) : Rule(right) { }
 	virtual string show_def() const {
 		string ret = "Sequental rule: " + left->name + " = ";
 		for (auto s : right) ret += s->show_ref() + " ";
@@ -185,6 +191,7 @@ struct Alter : public Rule {
 	Alter(const string& name, const string& left, const string& right) :
 		Rule(name, left, vector<string>{right}) { }
 	Alter(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	Alter(const vector<Syntagma*>& right) : Rule(right) { }
 	virtual string show_def() const {
 		string ret = "Sequental rule: " + left->name + " = ";
 		for (auto s : right) ret += s->show_ref() + " ";
@@ -207,6 +214,7 @@ struct Opt : public Rule {
 	Opt(const string& name, const string& left, const string& right) :
 		Rule(name, left, vector<string>{right}) { }
 	Opt(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	Opt(const vector<Syntagma*>& right) : Rule(right) { }
 	virtual string show_def() const {
 		string ret = "Sequental rule: " + left->name + " = ";
 		for (auto s : right) ret += s->show_ref() + " ";

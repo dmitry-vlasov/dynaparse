@@ -12,7 +12,35 @@ void test_grammar(Grammar& gr) {
 	<< new synt::Seq("ident", "exp", vector<string>{"id"});
 
 
-	//gr << new synt::Seq("AAA", "exp", {synt::Seq()});
+	//gr << new synt::Seq("AAA", "exp", {new synt::Seq("AA"), new Keyword("(")});
+
+	/*
+	gr << new synt::Seq("ImportList", "ImportList",
+		{
+			new Keyword("IMPORT"),
+			new synt::Opt(
+				{
+					new Regexp("ident", ""),
+					new Keyword(":=")
+				}
+			),
+			new Regexp("ident", ""),
+			new synt::Iter(
+				{
+					new Keyword(","),
+					new synt::Opt(
+						{
+							new Regexp("ident", ""),
+							new Keyword(":=")
+						}
+					),
+					new Regexp("ident", "")
+				}
+			),
+			new Keyword(";")
+		}
+	);
+	*/
 }
 
 /*
