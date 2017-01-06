@@ -12,13 +12,13 @@ void test_grammar(Grammar& gr) {
 	<< Rule("exp", vector<string>{"id"});
 }
 
-void smm_grammar(Grammar& gr) {
+void oberon_grammar(Grammar& gr) {
 	gr
 	<< Nonterm("exp")
 	<< Keyword("(") << Keyword("+") << Keyword(")") << Keyword("*")
 
-	<< Rule("Module", "MODULE ident \";\" [ImportList] DeclSeq [BEGIN StatementSeq] END ident \".\"")
-//ImportList    = IMPORT [ident ":="] ident {"," [ident ":="] ident} ";".
+	<< Rule("Module", "MODULE ident ; _[ImportList]_ DeclSeq _[ BEGIN StatementSeq ]_ END ident .")
+	<< Rule("ImportList", "IMPORT _[ ident := ]_ ident _{ , _[ ident := ]_ ident }_ ;")
 //DeclSeq       = { CONST {ConstDecl ";" } | TYPE {TypeDecl ";"} | VAR {VarDecl ";"}} {ProcDecl ";" | ForwardDecl ";"}.
 //ConstDecl     = IdentDef "=" ConstExpr.
 //TypeDecl      = IdentDef "=" Type.
@@ -28,6 +28,9 @@ void smm_grammar(Grammar& gr) {
 	<< Rule("exp", {"(", "exp", "*", "exp", ")"})
 	<< Regexp("id", "[a-zA-Z]+")
 	<< Rule("exp", vector<string>{"id"});
+
+
+	//Rule("ImportList", "IMPORT" <<  _[ ident := ]_ ident _{ , _[ ident := ]_ ident }_ ;")
 }
 
 int main(int argc, const char* argv[]) {

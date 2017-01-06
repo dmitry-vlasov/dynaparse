@@ -44,21 +44,6 @@ struct Nonterm : public Symb {
 	}
 };
 
-struct Iterate : public Symb {
-	vector<Symb*> vect;
-	Iterate(const Iterate&) = default;
-	Iterate(const string& n) : Symb(n) { }
-	virtual ~ Iterate() { }
-	virtual bool lexeme() const { return false; }
-	virtual string show() const { return name; }
-	virtual bool matches(Skipper*, StrIter&, StrIter) const { return false; }
-	virtual bool equals(const Symb* s) const {
-		if (const Iterate* it = dynamic_cast<const Iterate*>(s)) {
-			return name == it->name;
-		} else return false;
-	}
-};
-
 struct Keyword : public Lexeme {
 	string body;
 	Keyword(const Keyword& kw) = default;
@@ -130,10 +115,7 @@ struct Rule {
 
 	Semantic*      semantic;
 	Rule(const Rule&) = default;
-	Rule(const string& left, const string& right) :
-		left_str(left), right_str(), left(nullptr), right(), is_leaf(true), semantic(nullptr) {
-		right_str.push_back(right);
-	}
+	Rule(const string& left, const string& right);
 	Rule(const string& left, const vector<string>& right) :
 		left_str(left), right_str(right), left(nullptr), right(), is_leaf(true), semantic(nullptr) { }
 	string show() const {
@@ -149,26 +131,7 @@ inline Rule& operator << (Nonterm* nt, Rule&& r) {
 	return r;
 }
 
-struct Expr {
-	StrIter beg;
-	StrIter end;
-	Expr() : beg(), end(), rule(nullptr), nodes() { }
-	virtual ~Expr() { for (Expr* e : nodes) delete e; }
-	const Rule*   rule;
-	vector<Expr*> nodes;
-	string show() const {
-		if (!rule) return "null";
-		string ret;
-		if (rule->is_leaf) return string(beg, end);
-		int i = 0;
-		for (auto p : rule->right) ret += p->lexeme() ? p->show() : nodes[i ++]->show();
-		return ret;
-	}
-};
 
-ostream& operator << (ostream& os, const Expr& ex) {
-	os << ex.show(); return os;
-}
 
 struct Grammar {
 	map<string, Keyword*> keyword_map;
@@ -196,33 +159,7 @@ struct Grammar {
 		nonterm_map[nt.name] = nonterms.back();
 		return *this;
 	}
-	Grammar& operator << (const Rule& r) {
-		rules.push_back(new Rule(r));
-		Rule& rule = *rules.back();
-		if (!nonterm_map.count(rule.left_str)) {
-			std::cerr << "undefined non-terminal: " << rule.left_str << std::endl;
-			throw std::exception();
-		}
-		rule.left = nonterm_map[rule.left_str];
-		for (string& s : rule.right_str) {
-			if (nonterm_map.count(s)) {
-				rule.right.push_back(nonterm_map[s]);
-				rule.is_leaf = false;
-				continue;
-			}
-			if (keyword_map.count(s)) {
-				rule.right.push_back(keyword_map[s]);
-				continue;
-			}
-			if (regexp_map.count(s)) {
-				rule.right.push_back(regexp_map[s]);
-				continue;
-			}
-			std::cerr << "undefined symbol: " << s << std::endl;
-			throw std::exception();
-		}
-		return *this;
-	}
+	Grammar& operator << (const Rule& r);
 	string show() const {
 		string ret;
 		ret += "Grammar rules:\n";
@@ -230,13 +167,18 @@ struct Grammar {
 		ret += "\n";
 		return ret;
 	}
-	Grammar() : rules(), skipper([](char c)->bool {return c <= ' '; }) { }
+	Grammar() : rules(), skipper([](char c)->bool {return c <= ' '; }), c(0) { }
 	~Grammar() {
 		for (Rule* r : rules) delete r;
 		for (Keyword* kw : keywords) delete kw;
 		for (Nonterm* nt : nonterms) delete nt;
 		for (Regexp* re : regexps) delete re;
 	}
+private :
+	int c;
+	void parse_EBNF();
+	string new_non_term();
+	Rule* extract(Rule* r);
 };
 
 }

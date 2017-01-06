@@ -1,6 +1,7 @@
 #pragma once
 
-#include "grammar.hpp"
+#include "ebnf.hpp"
+#include "expr.hpp"
 
 namespace dynaparse {
 namespace parser {
