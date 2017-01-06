@@ -4,7 +4,8 @@
 
 namespace dynaparse {
 
-Rule::Rule(const string& left, const string& right) :
+Rule::Rule(const string& name, const string& left, const string& right) :
+	Symb(name),
 	left_str(left), right_str(), left(nullptr), right(), is_leaf(true), semantic(nullptr) {
 	std::stringstream ss(right);
     std::string item;
@@ -79,7 +80,7 @@ Rule* Grammar::extract(Rule* r) {
 		string nnt = new_non_term();
 		v.insert(end + 1, nnt);
 		v.erase(beg, end + 1);
-		*this << Rule(nnt, w);
+		*this << Rule(nnt, nnt, w);
 		return rules.back();
 	} else {
 		return nullptr;

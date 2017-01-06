@@ -11,14 +11,15 @@ struct Expr {
 	StrIter end;
 	Expr() : beg(), end(), rule(nullptr){ }
 	virtual ~Expr() {  }
-	const Rule*   rule;
+	const Rule* rule;
 	virtual string show() const  = 0;
 };
 
 struct Seq : public Expr {
-	Seq() : Expr(), nodes() { }
-	virtual ~Seq() { for (Expr* e : nodes) delete e; }
-	vector<Expr*> nodes;
+	Seq(int sz) : Expr(), nodes(new Expr*[sz]), size(sz) { }
+	virtual ~Seq() { for (int i = 0; i < size; ++ i) delete nodes[i]; }
+	Expr** nodes;
+	int   size;
 	virtual string show() const {
 		if (!rule) return "null";
 		string ret;

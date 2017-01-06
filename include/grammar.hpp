@@ -117,26 +117,37 @@ struct Regexp : public Lexeme {
 	}
 };
 
+
 struct Expr;
+typedef Expr* (Semantic) (vector<Expr*>&);
 
-typedef void (Semantic) (Expr*, StrIter beg, StrIter end);
-
-struct Rule {
+struct Rule : public Symb {
 	string         left_str;
 	vector<string> right_str;
 	Nonterm*       left;
 	vector<Symb*>  right;
 	bool           is_leaf;
-
 	Semantic*      semantic;
+
+	Rule(const string& name) :
+		Symb(name), left_str(), right_str(), left(nullptr), right(), is_leaf(true), semantic(nullptr) { }
 	Rule(const Rule&) = default;
-	Rule(const string& left, const string& right);
-	Rule(const string& left, const vector<string>& right) :
+	Rule(const string& name, const string& left, const string& right);
+	Rule(const string& name, const string& left, const vector<string>& right) : Symb(name),
 		left_str(left), right_str(right), left(nullptr), right(), is_leaf(true), semantic(nullptr) { }
-	string show() const {
+	virtual bool lexeme() const { return false; }
+	virtual string show() const {
 		string ret = left->name + " = ";
 		for (auto s : right) ret += s->show() + " ";
 		return ret;
+	}
+	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  {
+		return false; // ???
+	}
+	virtual bool equals(const Symb* s) const {
+		if (const Rule* r = dynamic_cast<const Rule*>(s)) {
+			return name == r->name;
+		} else return false;
 	}
 };
 

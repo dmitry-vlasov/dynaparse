@@ -66,7 +66,7 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch,
 		t->rule = r;
 		t->beg = beg;
 		t->end = ch;
-		if (r->semantic) r->semantic(t, beg, ch);
+		//if (r->semantic) r->semantic(t);
 		return Action::RET;
 	} else if (ch == end)
 		return Action::BREAK;

@@ -6,10 +6,10 @@ void test_grammar(Grammar& gr) {
 	gr
 	<< Nonterm("exp")
 	<< Keyword("_(_", "(") << Keyword("_+_", "+") << Keyword("_)_", ")") << Keyword("_*_", "*")
-	<< Rule("exp", {"_(_", "exp", "_+_", "exp", "_)_"})
-	<< Rule("exp", {"_(_", "exp", "_*_", "exp", "_)_"})
+	<< Rule("plus", "exp", {"_(_", "exp", "_+_", "exp", "_)_"})
+	<< Rule("plus", "exp", {"_(_", "exp", "_*_", "exp", "_)_"})
 	<< Regexp("id", "[a-zA-Z]+")
-	<< Rule("exp", vector<string>{"id"});
+	<< Rule("ident", "exp", vector<string>{"id"});
 }
 
 void oberon_grammar(Grammar& gr) {
@@ -17,17 +17,17 @@ void oberon_grammar(Grammar& gr) {
 	<< Nonterm("exp")
 	<< Keyword("(") << Keyword("+") << Keyword(")") << Keyword("*")
 
-	<< Rule("Module", "MODULE ident ; _[ImportList]_ DeclSeq _[ BEGIN StatementSeq ]_ END ident .")
-	<< Rule("ImportList", "IMPORT _[ ident := ]_ ident _{ , _[ ident := ]_ ident }_ ;")
+	<< Rule("Module", "Module", "MODULE ident ; _[ImportList]_ DeclSeq _[ BEGIN StatementSeq ]_ END ident .")
+	<< Rule("ImportList", "ImportList", "IMPORT _[ ident := ]_ ident _{ , _[ ident := ]_ ident }_ ;")
 //DeclSeq       = { CONST {ConstDecl ";" } | TYPE {TypeDecl ";"} | VAR {VarDecl ";"}} {ProcDecl ";" | ForwardDecl ";"}.
 //ConstDecl     = IdentDef "=" ConstExpr.
 //TypeDecl      = IdentDef "=" Type.
 //VarDecl       = IdentList ":" Type.
 
-	<< Rule("exp", {"(", "exp", "+", "exp", ")"})
-	<< Rule("exp", {"(", "exp", "*", "exp", ")"})
+	<< Rule("plus", "exp", {"(", "exp", "+", "exp", ")"})
+	<< Rule("mult", "exp", {"(", "exp", "*", "exp", ")"})
 	<< Regexp("id", "[a-zA-Z]+")
-	<< Rule("exp", vector<string>{"id"});
+	<< Rule("ident", "exp", vector<string>{"id"});
 
 
 	//Rule("ImportList", "IMPORT" <<  _[ ident := ]_ ident _{ , _[ ident := ]_ ident }_ ;")
