@@ -16,24 +16,26 @@ struct Syntagma {
 	Syntagma(const Syntagma&) = default;
 	Syntagma(const string& n) : name(n) { }
 	virtual ~ Syntagma() { }
-	virtual bool lexeme() const = 0;
 	virtual string show() const = 0;
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  = 0;
 	virtual bool equals(const Syntagma*) const = 0;
+
+	bool lexeme() const;
+	bool nonterm() const;
+	bool rule() const;
 };
 
 struct Lexeme : public Syntagma {
 	Lexeme(const Lexeme&) = default;
 	Lexeme(const string& n) : Syntagma(n) { }
-	virtual ~ Lexeme() { }
-	virtual bool lexeme() const { return true; }
 };
+
+bool Syntagma::lexeme() const { return dynamic_cast<const Lexeme*>(this); }
 
 struct Nonterm : public Syntagma {
 	Nonterm(const Nonterm& nt) = default;
 	Nonterm(const string& n) : Syntagma(n) { }
 	virtual ~ Nonterm() { }
-	virtual bool lexeme() const { return false; }
 	virtual string show() const { return name; }
 	virtual bool matches(Skipper*, StrIter&, StrIter) const { return false; }
 	virtual bool equals(const Syntagma* s) const {
@@ -42,6 +44,8 @@ struct Nonterm : public Syntagma {
 		} else return false;
 	}
 };
+
+bool Syntagma::nonterm() const { return dynamic_cast<const Nonterm*>(this); }
 
 struct Keyword : public Lexeme {
 	string body;
@@ -149,6 +153,8 @@ struct Rule : public Syntagma {
 		} else return false;
 	}
 };
+
+bool Syntagma::rule() const { return dynamic_cast<const Rule*>(this); }
 
 inline Rule& operator << (Nonterm* nt, Rule&& r) {
 	r.right.clear();
