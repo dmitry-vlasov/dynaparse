@@ -29,7 +29,8 @@ struct Syntagma {
 	Syntagma(const Syntagma&) = default;
 	Syntagma(const string& n) : name(n) { }
 	virtual ~ Syntagma() { }
-	virtual string show() const = 0;
+	virtual string show_def() const = 0;
+	virtual string show_ref() const { return name; }
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  = 0;
 	virtual bool equals(const Syntagma*) const = 0;
 	virtual void complete(Grammar*) { }
@@ -50,7 +51,7 @@ struct Grammar {
 	string show() const {
 		string ret;
 		ret += "Grammar syntagmas:\n";
-		for (auto s : syntagmas) ret += s->show() + "\n";
+		for (auto s : syntagmas) ret += s->show_def() + "\n";
 		ret += "\n";
 		return ret;
 	}

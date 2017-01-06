@@ -85,6 +85,7 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 	stack<MapIter> childnodes;
 	n.push(tree.begin());
 	m.push(beg);
+	StrIter b = beg;
 	StrIter ch = beg;
 	while (!n.empty() && !m.empty()) {
 		ch = m.top();
@@ -93,7 +94,7 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 			if (Expr* child = parse_LL(ch, end, skipper, *deeper, n.top() == tree.begin())) {
 				children.push_back(child);
 				switch (act(n, m, beg, ch, end, skipper, rule)) {
-				case Action::RET  : beg = ch; return new expr::Seq(beg, ch, rule, children);
+				case Action::RET  : beg = ch; return new expr::Seq(b, ch, rule, children);
 				case Action::BREAK: return nullptr;
 				case Action::CONT : continue;
 				}
@@ -102,7 +103,7 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 			}
 		} else if (n.top()->symb->matches(skipper, ch, end)) {
 			switch (act(n, m, beg, ch, end, skipper, rule)) {
-			case Action::RET  : beg = ch; return new expr::Seq(beg, ch, rule, children);
+			case Action::RET  : beg = ch; return new expr::Seq(b, ch, rule, children);
 			case Action::BREAK: return nullptr;
 			case Action::CONT : continue;
 			}

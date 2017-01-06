@@ -17,9 +17,18 @@ struct Seq : public Expr {
 	virtual string show() const {
 		if (!rule) return "null";
 		string ret;
-		if (rule->is_leaf) return string(beg, end);
+		if (rule->is_leaf) {
+			return string(beg, end);
+		}
 		int i = 0;
-		for (auto p : rule->right) ret += is_lexeme(p) ? p->show() : nodes[i ++]->show();
+		for (auto p : rule->right)
+			if (const Keyword* kw = dynamic_cast<const Keyword*>(p)) {
+				ret += kw->body;
+			} else if (const Regexp* re = dynamic_cast<const Regexp*>(p)) {
+				ret += re->name;
+			} else {
+				ret += nodes[i ++]->show();
+			}
 		return ret;
 	}
 };
@@ -53,25 +62,7 @@ struct Alter : public Expr {
 };
 */
 } // namespace expr
-/*
-struct Expr {
-	StrIter beg;
-	StrIter end;
-	const Rule*   rule;
-	vector<Expr*> nodes;
 
-	Expr() : beg(), end(), rule(nullptr), nodes() { }
-	virtual ~Expr() { for (Expr* e : nodes) delete e; }
-	virtual string show() const {
-		if (!rule) return "null";
-		string ret;
-		if (rule->is_leaf) return string(beg, end);
-		int i = 0;
-		for (auto p : rule->right) ret += p->lexeme() ? p->show() : nodes[i ++]->show();
-		return ret;
-	}
-};
-*/
 ostream& operator << (ostream& os, const Expr& ex) {
 	os << ex.show(); return os;
 }

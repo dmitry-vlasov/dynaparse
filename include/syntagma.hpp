@@ -14,7 +14,7 @@ struct Nonterm : public Syntagma {
 	Nonterm(const Nonterm& nt) = default;
 	Nonterm(const string& n) : Syntagma(n) { }
 	virtual ~ Nonterm() { }
-	virtual string show() const { return name; }
+	virtual string show_def() const { return "Nonterm: " + name; }
 	virtual bool matches(Skipper*, StrIter&, StrIter) const { return false; }
 	virtual bool equals(const Syntagma* s) const {
 		if (const Nonterm* nt = dynamic_cast<const Nonterm*>(s)) {
@@ -29,7 +29,7 @@ struct Keyword : public Lexeme {
 	Keyword(const string& b) : Lexeme(b), body(b) { }
 	Keyword(const string& n, const string& b) : Lexeme(n), body(b) { }
 	virtual ~Keyword() { }
-	virtual string show() const { return body; }
+	virtual string show_def() const { return "Keyword: " + body; }
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const {
 		skip(skipper, ch, end);
 		StrIter x = body.begin();
@@ -64,7 +64,7 @@ struct Empty : public Lexeme {
 	Empty(const Empty&) = default;
 	Empty() : Lexeme("") { }
 	virtual ~Empty() { }
-	virtual string show() const { return ""; }
+	virtual string show_def() const { return "Empty"; }
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const {
 		skip(skipper, ch, end);
 		return true;
@@ -81,7 +81,7 @@ struct Regexp : public Lexeme {
 	Regexp(const Regexp& re) : Lexeme(re), body(re.body), regexp(re.regexp) { }
 	Regexp(const string& n, const string& b) : Lexeme(n), body(b), regexp(b) { }
 	virtual ~ Regexp() { }
-	virtual string show() const { return Syntagma::name; }
+	virtual string show_def() const { return "Regexpr: " + Syntagma::name + " definition: " + body; }
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const {
 		skip(skipper, ch, end);
 		std::smatch m;
@@ -118,7 +118,6 @@ struct Rule : public Syntagma {
 	Rule(const string& name, const string& left, const vector<string>& right) : Syntagma(name),
 		left_str(left), left(nullptr), right_str(right), right(), is_leaf(true), semantic(nullptr) { }
 	virtual bool lexeme() const { return false; }
-	virtual string show() const = 0;
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const = 0;
 	virtual bool equals(const Syntagma* s) const = 0;
 	virtual void complete(Grammar* grammar) {
@@ -136,7 +135,9 @@ struct Rule : public Syntagma {
 			if (grammar->synt_map.count(s)) {
 				Syntagma* ss = grammar->synt_map[s];
 				right.push_back(ss);
-				is_leaf = dynamic_cast<Rule*>(ss);
+				if (dynamic_cast<Nonterm*>(ss)) {
+					is_leaf = false;
+				}
 			} else {
 				std::cerr << "undefined symbol: " << s << std::endl;
 				throw std::exception();
@@ -151,9 +152,9 @@ struct Seq : public Rule {
 	Seq(const Seq&) = default;
 	Seq(const string& name, const string& left, const string& right) : Rule(name, left, right) { }
 	Seq(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
-	virtual string show() const {
-		string ret = left->name + " = ";
-		for (auto s : right) ret += s->show() + " ";
+	virtual string show_def() const {
+		string ret = "Sequental rule: " + left->name + " = ";
+		for (auto s : right) ret += s->show_ref() + " ";
 		return ret;
 	}
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  {

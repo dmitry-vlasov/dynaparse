@@ -5,9 +5,9 @@ using namespace dynaparse;
 void test_grammar(Grammar& gr) {
 	gr
 	<< new Nonterm("exp")
-	<< new Keyword("_(_", "(") << new Keyword("_+_", "+") << new Keyword("_)_", ")") << new Keyword("_*_", "*")
-	<< new synt::Seq("plus", "exp", {"_(_", "exp", "_+_", "exp", "_)_"})
-	<< new synt::Seq("plus", "exp", {"_(_", "exp", "_*_", "exp", "_)_"})
+	<< new Keyword("(") << new Keyword("+") << new Keyword(")") << new Keyword("*")
+	<< new synt::Seq("plus", "exp", {"(", "exp", "+", "exp", ")"})
+	<< new synt::Seq("plus", "exp", {"(", "exp", "*", "exp", ")"})
 	<< new Regexp("id", "[a-zA-Z]+")
 	<< new synt::Seq("ident", "exp", vector<string>{"id"});
 }
