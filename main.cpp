@@ -4,12 +4,12 @@ using namespace dynaparse;
 
 void test_grammar(Grammar& gr) {
 	gr
-	<< new Nonterm("exp")
-	<< new Keyword("(") << new Keyword("+") << new Keyword(")") << new Keyword("*")
-	<< new synt::Seq("plus", "exp", {"(", "exp", "+", "exp", ")"})
-	<< new synt::Seq("plus", "exp", {"(", "exp", "*", "exp", ")"})
-	<< new Regexp("id", "[a-zA-Z]+")
-	<< new synt::Seq("ident", "exp", vector<string>{"id"});
+	<< Nonterm("exp")
+	<< Keyword("(") << Keyword("+") << Keyword(")") << Keyword("*")
+	<< synt::Seq("plus", "exp", {"(", "exp", "+", "exp", ")"})
+	<< synt::Seq("plus", "exp", {"(", "exp", "*", "exp", ")"})
+	<< Regexp("id", "[a-zA-Z]+")
+	<< synt::Seq("ident", "exp", vector<string>{"id"});
 
 
 	//gr << new synt::Seq("AAA", "exp", {new synt::Seq("AA"), new Keyword("(")});
@@ -42,15 +42,14 @@ void test_grammar(Grammar& gr) {
 	);
 	*/
 }
-
 /*
 void oberon_grammar(Grammar& gr) {
 	gr
-	<< Nonterm("exp")
+	<< Nonterm("Module")
 	<< Keyword("(") << Keyword("+") << Keyword(")") << Keyword("*")
 
-	<< Rule("Module", "Module", "MODULE ident ; _[ImportList]_ DeclSeq _[ BEGIN StatementSeq ]_ END ident .")
-	<< Rule("ImportList", "ImportList", "IMPORT _[ ident := ]_ ident _{ , _[ ident := ]_ ident }_ ;")
+	<< Rule("Module", "Module", "MODULE ident ; [ImportList] DeclSeq [ BEGIN StatementSeq ]_ END ident .")
+	<< Rule("ImportList", "ImportList", "IMPORT [ ident := ] ident {, [ ident := ] ident }_;")
 //DeclSeq       = { CONST {ConstDecl ";" } | TYPE {TypeDecl ";"} | VAR {VarDecl ";"}} {ProcDecl ";" | ForwardDecl ";"}.
 //ConstDecl     = IdentDef "=" ConstExpr.
 //TypeDecl      = IdentDef "=" Type.
@@ -64,7 +63,9 @@ void oberon_grammar(Grammar& gr) {
 
 	//Rule("ImportList", "IMPORT" <<  _[ ident := ]_ ident _{ , _[ ident := ]_ ident }_ ;")
 }
+
 */
+
 /*   Rule("source", Seq( { node } < add_node )  )
  *   Rule("node", Seq( const | assert | include | comment ) )
  *   Rule("comment", Seq( "$(", comment-string ,"$)"))
@@ -84,6 +85,7 @@ int main(int argc, const char* argv[]) {
 	if (Expr* ex = p.parse(first, "exp")) {
 		std::cout << *ex << std::endl;
 		std::cout << "OK" << std::endl;
+		delete ex;
 	} else {
 		std::cout << "FUCK!!!" << std::endl;
 	}
@@ -92,6 +94,7 @@ int main(int argc, const char* argv[]) {
 	if (Expr* ex = p.parse(sec, "exp")) {
 		std::cout << *ex << std::endl;
 		std::cout << "OK" << std::endl;
+		delete ex;
 	} else {
 		std::cout << "FUCK!!!" << std::endl;
 	}
@@ -100,6 +103,7 @@ int main(int argc, const char* argv[]) {
 	if (Expr* ex = p.parse(third, "exp")) {
 		std::cout << *ex << std::endl;
 		std::cout << "OK" << std::endl;
+		delete ex;
 	} else {
 		std::cout << "FUCK!!!" << std::endl;
 	}

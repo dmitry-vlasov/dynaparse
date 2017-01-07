@@ -10,7 +10,10 @@ struct Seq : public Expr {
 		Expr(beg, end), nodes(new Expr*[v.size()]), size(v.size()), rule(dynamic_cast<const synt::Seq*>(r)) {
 		for (int i = 0; i < size; ++ i) nodes[i] = v[i];
 	}
-	virtual ~Seq() { for (int i = 0; i < size; ++ i) delete nodes[i]; }
+	virtual ~Seq() {
+		for (int i = 0; i < size; ++ i) delete nodes[i];
+		delete[] nodes;
+	}
 	Expr** nodes;
 	int    size;
 	const synt::Seq* rule;

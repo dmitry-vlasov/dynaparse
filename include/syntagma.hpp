@@ -21,8 +21,20 @@ struct Nonterm : public Syntagma {
 			return name == nt->name;
 		} else return false;
 	}
+	virtual Syntagma* clone() const {
+		return new Nonterm(*this);
+	}
 };
 
+typedef vector<Nonterm> Nonterms;
+/*
+struct Nonterms {
+	vector<Nonterm> nonterms;
+	Nonterms(const vector<string>& nt) : nonterms() {
+		for (string& s : nt) nonterms.push_back(s);
+	}
+};
+*/
 struct Keyword : public Lexeme {
 	string body;
 	Keyword(const Keyword& kw) = default;
@@ -43,6 +55,9 @@ struct Keyword : public Lexeme {
 			return body == t->body;
 		} else return false;
 	}
+	virtual Syntagma* clone() const {
+		return new Keyword(*this);
+	}
 };
 
 struct Empty : public Lexeme {
@@ -56,6 +71,9 @@ struct Empty : public Lexeme {
 	}
 	virtual bool equals(const Syntagma* s) const {
 		return dynamic_cast<const Empty*>(s);
+	}
+	virtual Syntagma* clone() const {
+		return new Empty(*this);
 	}
 };
 
@@ -78,6 +96,9 @@ struct Regexp : public Lexeme {
 		if (const Regexp* r = dynamic_cast<const Regexp*>(s)) {
 			return body == r->body;
 		} else return false;
+	}
+	virtual Syntagma* clone() const {
+		return new Regexp(*this);
 	}
 };
 
@@ -159,6 +180,9 @@ struct Seq : public Rule {
 			return name == sq->name;
 		} else return false;
 	}
+	virtual Syntagma* clone() const {
+		return new Seq(*this);
+	}
 };
 
 struct Iter : public Rule {
@@ -181,6 +205,9 @@ struct Iter : public Rule {
 		if (const Seq* sq = dynamic_cast<const Seq*>(s)) {
 			return name == sq->name;
 		} else return false;
+	}
+	virtual Syntagma* clone() const {
+		return new Iter(*this);
 	}
 };
 
@@ -205,6 +232,9 @@ struct Alter : public Rule {
 			return name == sq->name;
 		} else return false;
 	}
+	virtual Syntagma* clone() const {
+		return new Alter(*this);
+	}
 };
 
 struct Opt : public Rule {
@@ -227,6 +257,9 @@ struct Opt : public Rule {
 		if (const Seq* sq = dynamic_cast<const Seq*>(s)) {
 			return name == sq->name;
 		} else return false;
+	}
+	virtual Syntagma* clone() const {
+		return new Opt(*this);
 	}
 };
 

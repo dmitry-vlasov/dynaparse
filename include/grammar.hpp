@@ -34,6 +34,7 @@ struct Syntagma {
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  = 0;
 	virtual bool equals(const Syntagma*) const = 0;
 	virtual void complete(Grammar*) { }
+	virtual Syntagma* clone() const = 0;
 };
 
 struct Grammar {
@@ -47,6 +48,10 @@ struct Grammar {
 		synt_map[s->name] = s;
 		s->complete(this);
 		return *this;
+	}
+
+	Grammar& operator << (Syntagma&& ss) {
+		return operator << (ss.clone());
 	}
 
 	string show() const {
