@@ -14,6 +14,8 @@
 #include <algorithm>
 #include <cassert>
 #include <regex>
+#include <stdarg.h>
+#include <initializer_list>
 
 namespace dynaparse {
 

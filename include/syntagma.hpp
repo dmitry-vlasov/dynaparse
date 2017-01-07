@@ -3,7 +3,7 @@
 #include "grammar.hpp"
 
 namespace dynaparse {
-namespace synt {
+namespace rule {
 
 struct Lexeme : public Syntagma {
 	Lexeme(const Lexeme&) = default;
@@ -113,8 +113,10 @@ struct Rule : public Syntagma {
 	bool is_leaf;
 	Semantic*      semantic;
 
-	Rule(const string& name) :
-		Syntagma(name), left_str(), left(nullptr), right_str(), right(), is_leaf(true), semantic(nullptr) { }
+	Rule(const string& name = "") : Syntagma(name),
+		left_str(), left(nullptr), right_str(), right(), is_leaf(true), semantic(nullptr) { }
+	Rule(const string& name, const string& left) : Syntagma(name),
+		left_str(left), left(nullptr), right_str(), right(), is_leaf(true), semantic(nullptr) { }
 	Rule(const Rule&) = default;
 	Rule(const string& name, const string& left, const string& right) : Syntagma(name),
 		left_str(left), left(nullptr), right_str(), right(), is_leaf(true), semantic(nullptr) {
@@ -127,11 +129,11 @@ struct Rule : public Syntagma {
 	Rule(const string& name, const string& left, const vector<string>& right) : Syntagma(name),
 		left_str(left), left(nullptr), right_str(right), right(), is_leaf(true), semantic(nullptr) { }
 
-	Rule(const string& name, const string& left, const vector<Syntagma*>& right) : Syntagma(name),
-		left_str(left), left(nullptr), right_str(), right(right), is_leaf(true), semantic(nullptr) { }
+	Rule(const string& name, const string& left, const vector<Syntagma*>& r) : Syntagma(name),
+		left_str(left), left(nullptr), right_str(), right(r), is_leaf(true), semantic(nullptr) { }
 
-	Rule(const vector<Syntagma*>& right) : Syntagma(""),
-		left_str(), left(nullptr), right_str(), right(right), is_leaf(true), semantic(nullptr) { }
+	Rule(const vector<Syntagma*>& r) : Syntagma(name),
+		left_str(), left(nullptr), right_str(), right(r), is_leaf(true), semantic(nullptr) { }
 
 	virtual bool lexeme() const { return false; }
 	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const = 0;
@@ -195,6 +197,7 @@ struct Iter : public Rule {
 	Iter(const string& name, const string& left, const string& right) :
 		Rule(name, left, vector<string>{right}) { }
 	Iter(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	Iter(const string& name, const string& left, const vector<Syntagma*>& right) : Rule(name, left, right) { }
 	Iter(const vector<Syntagma*>& right) : Rule(right) { }
 	virtual string show_def() const {
 		string ret = "Sequental rule: " + left->name + " = ";
@@ -214,14 +217,15 @@ struct Iter : public Rule {
 	}
 };
 
-struct Alter : public Rule {
+struct Alt : public Rule {
 	//Seq(const string& name) :
 	//	Rule(name) { }
-	Alter(const Alter&) = default;
-	Alter(const string& name, const string& left, const string& right) :
+	Alt(const Alt&) = default;
+	Alt(const string& name, const string& left, const string& right) :
 		Rule(name, left, vector<string>{right}) { }
-	Alter(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
-	Alter(const vector<Syntagma*>& right) : Rule(right) { }
+	Alt(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	Alt(const string& name, const string& left, const vector<Syntagma*>& right) : Rule(name, left, right) { }
+	Alt(const vector<Syntagma*>& right) : Rule(right) { }
 	virtual string show_def() const {
 		string ret = "Sequental rule: " + left->name + " = ";
 		for (auto s : right) ret += s->show_ref() + " ";
@@ -236,7 +240,7 @@ struct Alter : public Rule {
 		} else return false;
 	}
 	virtual Syntagma* clone() const {
-		return new Alter(*this);
+		return new Alt(*this);
 	}
 };
 
@@ -247,6 +251,7 @@ struct Opt : public Rule {
 	Opt(const string& name, const string& left, const string& right) :
 		Rule(name, left, vector<string>{right}) { }
 	Opt(const string& name, const string& left, const vector<string>& right) : Rule(name, left, right) { }
+	Opt(const string& name, const string& left, const vector<Syntagma*>& right) : Rule(name, left, right) { }
 	Opt(const vector<Syntagma*>& right) : Rule(right) { }
 	virtual string show_def() const {
 		string ret = "Sequental rule: " + left->name + " = ";
@@ -268,16 +273,41 @@ struct Opt : public Rule {
 
 } // namespace synt
 
-typedef synt::Lexeme Lexeme;
-typedef synt::Keyword Keyword;
-typedef synt::Keywords Keywords;
-typedef synt::Regexp Regexp;
-typedef synt::Nonterm Nonterm;
-typedef synt::Empty Empty;
-typedef synt::Rule Rule;
+typedef rule::Lexeme Lexeme;
+typedef rule::Keyword Keyword;
+typedef rule::Keywords Keywords;
+typedef rule::Regexp Regexp;
+typedef rule::Nonterm Nonterm;
+typedef rule::Nonterms Nonterms;
+typedef rule::Empty Empty;
 
-inline bool is_lexeme(Syntagma* s) { return dynamic_cast<const synt::Lexeme*>(s); }
-inline bool is_nonterm(Syntagma* s) { return dynamic_cast<const synt::Nonterm*>(s); }
-inline bool is_rule(Syntagma* s) { return dynamic_cast<const synt::Rule*>(s); }
+inline Keyword* KW(const string& s) { return new Keyword(s); }
+inline Nonterm* NT(const string& s) { return new Nonterm(s); }
+inline Regexp*  RE(const string& s, const string& b) { return new Regexp(s, b); }
+
+typedef rule::Rule Rule;
+
+#define ACCESSOR(Synt) \
+inline rule::Synt* Synt(const string& name, const string& left, const string& right) { \
+	return new rule::Synt(name, left, right); \
+} \
+inline rule::Synt* Synt(const string& name, const string& left, const vector<string>& right) { \
+	return new rule::Synt(name, left, right); \
+} \
+inline rule::Synt* Synt(const string& name, const string& left, const vector<Syntagma*>& right) { \
+	return new rule::Synt(name, left, right); \
+} \
+inline rule::Synt* Synt(const vector<Syntagma*>& right) { \
+	return new rule::Synt(right); \
+}
+
+ACCESSOR(Seq)
+ACCESSOR(Iter)
+ACCESSOR(Alt)
+ACCESSOR(Opt)
+
+inline bool is_lexeme(Syntagma* s) { return dynamic_cast<const rule::Lexeme*>(s); }
+inline bool is_nonterm(Syntagma* s) { return dynamic_cast<const rule::Nonterm*>(s); }
+inline bool is_rule(Syntagma* s) { return dynamic_cast<const rule::Rule*>(s); }
 
 }

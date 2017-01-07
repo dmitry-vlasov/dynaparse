@@ -7,7 +7,7 @@ namespace expr {
 
 struct Seq : public Expr {
 	Seq(const StrIter beg, StrIter end, const Rule* r, vector<Expr*> v) :
-		Expr(beg, end), nodes(new Expr*[v.size()]), size(v.size()), rule(dynamic_cast<const synt::Seq*>(r)) {
+		Expr(beg, end), nodes(new Expr*[v.size()]), size(v.size()), rule(dynamic_cast<const rule::Seq*>(r)) {
 		for (int i = 0; i < size; ++ i) nodes[i] = v[i];
 	}
 	virtual ~Seq() {
@@ -16,7 +16,7 @@ struct Seq : public Expr {
 	}
 	Expr** nodes;
 	int    size;
-	const synt::Seq* rule;
+	const rule::Seq* rule;
 	virtual string show() const {
 		if (!rule) return "null";
 		string ret;
@@ -41,7 +41,7 @@ struct Iter : public Expr {
 	Iter() : Expr(), nodes(), rule(nullptr) { }
 	virtual ~Iter() { for (Expr* e : nodes) delete e; }
 	vector<Expr*> nodes;
-	const synt::Iter* rule;
+	const rule::Iter* rule;
 	virtual string show() const {
 		if (!rule) return "null";
 		string ret;
@@ -64,7 +64,7 @@ struct Alter : public Expr {
 	Alter() : Expr(), node(nullptr), rule(nullptr) { }
 	virtual ~Alter() { if (node) delete node; }
 	Expr* node;
-	const synt::Alter* rule;
+	const rule::Alt* rule;
 	virtual string show() const {
 		if (!rule) return "null";
 		string ret;
@@ -78,7 +78,7 @@ struct Opt : public Expr {
 	Opt() : Expr(), node(nullptr), rule(nullptr) { }
 	virtual ~Opt() { if (node) delete node; }
 	Expr* node;
-	const synt::Opt* rule;
+	const rule::Opt* rule;
 	virtual string show() const {
 		if (!rule) return "null";
 		string ret;
