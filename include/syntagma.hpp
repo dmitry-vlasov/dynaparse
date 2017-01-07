@@ -26,15 +26,12 @@ struct Nonterm : public Syntagma {
 	}
 };
 
-typedef vector<Nonterm> Nonterms;
-/*
-struct Nonterms {
-	vector<Nonterm> nonterms;
-	Nonterms(const vector<string>& nt) : nonterms() {
-		for (string& s : nt) nonterms.push_back(s);
+struct Nonterms : public Syntagmas {
+	Nonterms(const vector<string>& nt) {
+		for (const string& s : nt) syntagmas.push_back(new Nonterm(s));
 	}
 };
-*/
+
 struct Keyword : public Lexeme {
 	string body;
 	Keyword(const Keyword& kw) = default;
@@ -57,6 +54,12 @@ struct Keyword : public Lexeme {
 	}
 	virtual Syntagma* clone() const {
 		return new Keyword(*this);
+	}
+};
+
+struct Keywords : public Syntagmas {
+	Keywords(const vector<string>& kws) {
+		for (const string& kw : kws) syntagmas.push_back(new Keyword(kw));
 	}
 };
 
@@ -267,6 +270,7 @@ struct Opt : public Rule {
 
 typedef synt::Lexeme Lexeme;
 typedef synt::Keyword Keyword;
+typedef synt::Keywords Keywords;
 typedef synt::Regexp Regexp;
 typedef synt::Nonterm Nonterm;
 typedef synt::Empty Empty;

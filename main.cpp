@@ -5,7 +5,7 @@ using namespace dynaparse;
 void test_grammar(Grammar& gr) {
 	gr
 	<< Nonterm("exp")
-	<< Keyword("(") << Keyword("+") << Keyword(")") << Keyword("*")
+	<< Keywords({"(", "+", ")", "*"})
 	<< synt::Seq("plus", "exp", {"(", "exp", "+", "exp", ")"})
 	<< synt::Seq("plus", "exp", {"(", "exp", "*", "exp", ")"})
 	<< Regexp("id", "[a-zA-Z]+")

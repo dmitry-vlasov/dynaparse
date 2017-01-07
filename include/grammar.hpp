@@ -37,6 +37,10 @@ struct Syntagma {
 	virtual Syntagma* clone() const = 0;
 };
 
+struct Syntagmas {
+	vector<Syntagma*> syntagmas;
+};
+
 struct Grammar {
 	string                 name;
 	map<string, Syntagma*> synt_map;
@@ -50,8 +54,13 @@ struct Grammar {
 		return *this;
 	}
 
-	Grammar& operator << (Syntagma&& ss) {
-		return operator << (ss.clone());
+	Grammar& operator << (Syntagma&& s) {
+		return operator << (s.clone());
+	}
+
+	Grammar& operator << (Syntagmas&& ss) {
+		for (Syntagma* s : ss.syntagmas) operator << (s);
+		return *this;
 	}
 
 	string show() const {
