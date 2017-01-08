@@ -19,9 +19,7 @@ struct Ref : public Syntagma {
 	Symb*  ref;
 	Ref(const string& n) : name(n), ref(nullptr) { }
 	virtual ~ Ref() { }
-	virtual string show() const {
-		return name;
-	}
+	virtual string show() const { return name; }
 	virtual void complete(Grammar* grammar) {
 		if (!grammar->symb_map.count(name)) {
 			std::cerr << "undefined symbol: " << name << std::endl;
@@ -35,12 +33,20 @@ struct Operator : public Syntagma {
 	vector<Syntagma*> operands;
 	Operator(const vector<Syntagma*>& op) : operands(op) { }
 	virtual string show() const {
-		string str;
-		for (auto s : operands) str += s->show() + " ";
-		return str;
+		return show_with_delim(" ");
 	}
 	virtual void complete(Grammar* grammar) {
 		for (auto s : operands) s->complete(grammar);
+	}
+
+protected :
+	string show_with_delim(const string& delim) const {
+		string str;
+		for (unsigned i = 0; i < operands.size(); ++ i) {
+			if (i > 0) str += delim;
+			str += operands[i]->show();
+		}
+		return str;
 	}
 };
 
@@ -50,20 +56,29 @@ struct Seq : public Operator {
 
 struct Iter : public Operator {
 	Iter(const vector<Syntagma*>& op) : Operator(op) { }
+	virtual string show() const {
+		return "{ " + Operator::show() + " }";
+	}
 };
 
 struct Alt : public Operator {
 	Alt(const vector<Syntagma*>& op) : Operator(op) { }
+	virtual string show() const {
+		return Operator::show_with_delim(" | ");
+	}
 };
 
 struct Opt : public Operator {
 	Opt(const vector<Syntagma*>& op) : Operator(op) { }
+	virtual string show() const {
+		return "[ " + Operator::show() + " ]";
+	}
 };
 
 }
 
 string Rule::show() const {
-	return left->show() + " = " + right->show();
+	return "Rule: " + left->show() + " = " + right->show();
 }
 
 Grammar& Grammar::operator << (Rule&& rule) {

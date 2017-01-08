@@ -12,42 +12,43 @@ void test_grammar(Grammar& gr) {
 	<< Rule(R("exp"), Seq({R("("), R("exp"), R("*"), R("exp"), R(")")}))
 	<< Rule(R("exp"), Seq({R("id")}));
 }
-/*
+
 void oberon_grammar(Grammar& gr) {
 	gr
 	<< Nonterms({"Module", "ImportList", "ident", "DeclSeq", "StatementSeq", "DeclSeq", "ConstDecl", "TypeDecl", "VarDecl", "Type"})
-	<< Nonterms({"ConstExpr", "ProcDecl", "ForwardDecl"})
-	<< Keywords({"(", "MODULE", "BEGIN", "END", ";", ".", ":", "CONST", "TYPE", "VAR"})
-	<< Seq("Module", "Module", {
-	KW("MODULE"), NT("ident"), KW(";"), Opt({NT("ImportList")}), NT("DeclSeq"), Opt({KW("BEGIN"), NT("StatementSeq")}), KW("END"), NT("ident"), KW(".")
-	})
-	<< Seq("ImportList", "ImportList", {
-	KW("IMPORT"), Opt({NT("ident"), KW(":=")}), NT("ident"), Iter({KW(","), Opt({NT("ident"), KW(":=")}), NT("ident")}), KW(";")
-	})
-	<< Seq({
+	<< Nonterms({"ConstExpr", "ProcDecl", "ForwardDecl", "IdentDef", "IdentList"})
+	<< Keywords({"(", "MODULE", "BEGIN", "END", ";", ".", ":", "CONST", "TYPE", "VAR", "IMPORT", ":=",  ",", "="})
+
+	<< Rule(R("Module"), Seq({
+	R("MODULE"), R("ident"), R(";"), Opt({R("ImportList")}), R("DeclSeq"), Opt({R("BEGIN"), R("StatementSeq")}), R("END"), R("ident"), R(".")
+	}))
+	<< Rule(R("ImportList"), Seq({
+	R("IMPORT"), Opt({R("ident"), R(":=")}), R("ident"), Iter({R(","), Opt({R("ident"), R(":=")}), R("ident")}), R(";")
+	}))
+	<< Rule(R("DeclSeq"), Seq({
 		Iter(
 			{Alt({
-				Seq({KW("CONST"), Iter({NT("ConstDecl"), KW(";")})
+				Seq({R("CONST"), Iter({R("ConstDecl"), R(";")})
 				}),
-				Seq({KW("TYPE"), Iter({NT("TypeDecl"), KW(";")})
+				Seq({R("TYPE"), Iter({R("TypeDecl"), R(";")})
 				}),
-				Seq({KW("VAR"), Iter({NT("VarDecl"), KW(";")})
+				Seq({R("VAR"), Iter({R("VarDecl"), R(";")})
 				}),
 			})}
 		),
 		Iter(
 			{Alt({
-				Seq({NT("ProcDecl"), KW(";")}),
-				Seq({NT("ForwardDecl"), KW(";")})
+				Seq({R("ProcDecl"), R(";")}),
+				Seq({R("ForwardDecl"), R(";")})
 			})}
 		)
-	})
-	<< Seq("ConstDecl", "ConstDecl", {NT("IdentDef"), KW("="), NT("ConstExpr")})
-	<< Seq("TypeDecl", "TypeDecl", {NT("IdentDef"), KW("="), NT("Type")})
-	<< Seq("VarDecl", "VarDecl", {NT("IdentList"), KW(":"), NT("Type")});
+	}))
+	<< Rule(R("ConstDecl"), Seq({R("IdentDef"), R("="), R("ConstExpr")}))
+	<< Rule(R("TypeDecl"), Seq({R("IdentDef"), R("="), R("Type")}))
+	<< Rule(R("VarDecl"), Seq({R("IdentList"), R(":"), R("Type")}));
 }
 
-*/
+
 void test_1() {
 	Grammar gr("test");
 	test_grammar(gr);
@@ -80,11 +81,18 @@ void test_1() {
 	} else {
 		std::cout << "FUCK!!!" << std::endl;
 	}
+}
 
+void test_ober() {
+	Grammar gr("oberon");
+	oberon_grammar(gr);
+	//Parser p(gr);
+	std::cout << gr.show() << std::endl;
 }
 
 int main(int argc, const char* argv[]) {
 	test_1();
+	test_ober();
 	return 0;
 }
 
