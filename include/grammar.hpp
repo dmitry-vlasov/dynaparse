@@ -13,6 +13,12 @@ struct Rule {
 	string show() const;
 };
 
+typedef bool (Skipper) (char);
+
+inline void skip(Skipper* skipper, StrIter& ch, StrIter end){
+	while (ch != end && skipper(*ch)) ++ch;
+}
+
 struct Grammar {
 	string             name;
 	map<string, Symb*> symb_map;

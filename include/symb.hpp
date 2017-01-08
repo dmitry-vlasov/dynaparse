@@ -4,12 +4,7 @@
 
 namespace dynaparse {
 
-typedef bool (Skipper) (char);
 typedef string::const_iterator StrIter;
-
-inline void skip(Skipper* skipper, StrIter& ch, StrIter end){
-	while (ch != end && skipper(*ch)) ++ch;
-}
 
 struct Symb {
 	string name;
@@ -17,7 +12,7 @@ struct Symb {
 	Symb(const string& n) : name(n) { }
 	virtual ~ Symb() { }
 	virtual string show() const = 0;
-	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  = 0;
+	virtual bool matches(StrIter& ch, StrIter end) const  = 0;
 	virtual bool equals(const Symb* s) const = 0;
 };
 
@@ -37,7 +32,7 @@ struct Nonterm : public Symb {
 	Nonterm(const string& n) : Symb(n) { }
 	virtual ~ Nonterm() { }
 	virtual string show() const { return "Nonterm: " + name; }
-	virtual bool matches(Skipper*, StrIter&, StrIter) const { return false; }
+	virtual bool matches(StrIter&, StrIter) const { return false; }
 	virtual bool equals(const Symb* s) const {
 		if (const Nonterm* nt = dynamic_cast<const Nonterm*>(s)) {
 			return name == nt->name;
@@ -52,8 +47,7 @@ struct Keyword : public Lexeme {
 	Keyword(const string& n, const string& b) : Lexeme(n), body(b) { }
 	virtual ~Keyword() { }
 	virtual string show() const { return "Keyword: " + body; }
-	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const {
-		skip(skipper, ch, end);
+	virtual bool matches(StrIter& ch, StrIter end) const {
 		StrIter x = body.begin();
 		for (; x != body.end() && ch != end; ++x, ++ch) {
 			if (*x != *ch) return false;
@@ -74,8 +68,7 @@ struct Regexp : public Lexeme {
 	Regexp(const string& n, const string& b) : Lexeme(n), body(b), regexp(b) { }
 	virtual ~ Regexp() { }
 	virtual string show() const { return "Regexpr: " + name + " definition: " + body; }
-	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const {
-		skip(skipper, ch, end);
+	virtual bool matches(StrIter& ch, StrIter end) const {
 		std::smatch m;
 		bool ret = std::regex_search(ch, end, m, regexp, std::regex_constants::match_continuous);
 		if (ret) ch += m.length();

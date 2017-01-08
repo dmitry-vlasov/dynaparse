@@ -18,7 +18,7 @@ struct Node {
 	const Rule* rule;
 };
 
-inline Node createNode(map<string, Tree>& trees, Skipper* skipper, const Symb* s) {
+inline Node createNode(map<string, Tree>& trees, const Symb* s) {
 	Node n;
 	n.symb = s;
 	n.rule = nullptr;
@@ -31,7 +31,7 @@ inline Node createNode(map<string, Tree>& trees, Skipper* skipper, const Symb* s
 	return n;
 }
 
-inline Node* add(map<string, Tree>& trees, Skipper* skipper, Tree& tree, vector<Syntagma*>& ex) {
+inline Node* add(map<string, Tree>& trees, Tree& tree, vector<Syntagma*>& ex) {
 	assert(ex.size());
 	Tree* m = &tree;
 	Node* n = nullptr;
@@ -52,7 +52,7 @@ inline Node* add(map<string, Tree>& trees, Skipper* skipper, Tree& tree, vector<
 		}
 		if (new_symb) {
 			if (m->size()) m->back().final = false;
-			m->push_back(createNode(trees, skipper, r->ref));
+			m->push_back(createNode(trees, r->ref));
 			n = &m->back();
 			n->final = true;
 			m = &n->next;
@@ -65,7 +65,7 @@ typedef Tree::const_iterator MapIter;
 
 enum class Action { RET, BREAK, CONT };
 
-inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch, StrIter end, Skipper* skipper, const Rule*& rule) {
+inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch, StrIter end, const Rule*& rule) {
 	if (const Rule* r = n.top()->rule) {
 		rule = r;
 		return Action::RET;
@@ -94,12 +94,13 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 	StrIter ch = beg;
 	while (!n.empty() && !m.empty()) {
 		ch = m.top();
+		skip(skipper, ch, end);
 		StrIter c = ch;
 		if (const Tree* deeper = n.top()->tree) {
 			childnodes.push(n.top());
 			if (Expr* child = parse_LL(ch, end, skipper, *deeper, n.top() == tree.begin())) {
 				children.push_back(child);
-				switch (act(n, m, beg, ch, end, skipper, rule)) {
+				switch (act(n, m, beg, ch, end, rule)) {
 				case Action::RET  : beg = ch; return new expr::Seq(b, ch, rule, children);
 				case Action::BREAK: return nullptr;
 				case Action::CONT : continue;
@@ -107,9 +108,9 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 			} else {
 				childnodes.pop();
 			}
-		} else if (n.top()->symb->matches(skipper, ch, end)) {
+		} else if (n.top()->symb->matches(ch, end)) {
 			children.push_back(new expr::Lexeme(c, ch));
-			switch (act(n, m, beg, ch, end, skipper, rule)) {
+			switch (act(n, m, beg, ch, end, rule)) {
 			case Action::RET  : beg = ch; return new expr::Seq(b, ch, rule, children);
 			case Action::BREAK: return nullptr;
 			case Action::CONT : continue;
@@ -144,7 +145,7 @@ public :
 			rule::Ref* nt = dynamic_cast<rule::Ref*>(rule.left);
 			rule::Operator* op = dynamic_cast<rule::Operator*>(rule.right);
 			parser::Tree& tree = trees[nt->name];
-			parser::Node* n = add(trees, gr.skipper, tree, op->operands);
+			parser::Node* n = add(trees, tree, op->operands);
 			n->rule = &rule;
 		}
 	}
