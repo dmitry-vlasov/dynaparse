@@ -141,12 +141,12 @@ public :
 				trees[nt->name];
 			}
 		}
-		for (Rule& rule : grammar.rules) {
-			rule::Ref* nt = dynamic_cast<rule::Ref*>(rule.left);
-			rule::Operator* op = dynamic_cast<rule::Operator*>(rule.right);
+		for (Rule* rule : grammar.rules) {
+			rule::Ref* nt = dynamic_cast<rule::Ref*>(rule->left);
+			rule::Operator* op = dynamic_cast<rule::Operator*>(rule->right);
 			parser::Tree& tree = trees[nt->name];
 			parser::Node* n = add(trees, tree, op->operands);
-			n->rule = &rule;
+			n->rule = rule;
 		}
 	}
 	Expr* parse(string& src, const string& type);

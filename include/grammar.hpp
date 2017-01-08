@@ -8,6 +8,7 @@ struct Syntagma;
 
 struct Rule {
 	Rule(Syntagma* l, Syntagma* r) : left(l), right(r) { }
+	~ Rule();
 	Syntagma* left;
 	Syntagma* right;
 	string show() const;
@@ -23,7 +24,7 @@ struct Grammar {
 	string             name;
 	map<string, Symb*> symb_map;
 	vector<Symb*>      symbs;
-	vector<Rule>       rules;
+	vector<Rule*>      rules;
 	Skipper*           skipper;
 
 	Grammar& operator << (Symb* s) {
@@ -45,13 +46,16 @@ struct Grammar {
 		ret += "--------------------\n";
 		for (auto symb : symbs) ret += symb->show() + "\n";
 		ret += "\n";
-		for (auto& rule : rules) ret += rule.show() + "\n";
+		for (auto rule : rules) ret += rule->show() + "\n";
 		ret += "\n";
 		return ret;
 	}
 	Grammar(const string& n) : name(n), symb_map(), symbs(), rules(),
 		skipper([](char c)->bool {return c <= ' '; }), c(0) { }
-	~Grammar() { for (Symb* s : symbs) delete s; }
+	~Grammar() {
+		for (Symb* s : symbs) delete s;
+		for (Rule* r : rules) delete r;
+	}
 
 private :
 	int c;

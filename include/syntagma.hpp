@@ -32,6 +32,7 @@ struct Ref : public Syntagma {
 struct Operator : public Syntagma {
 	vector<Syntagma*> operands;
 	Operator(const vector<Syntagma*>& op) : operands(op) { }
+	virtual ~ Operator() { for (auto s : operands) delete s; }
 	virtual string show() const {
 		return show_with_delim(" ");
 	}
@@ -80,11 +81,17 @@ struct Opt : public Operator {
 string Rule::show() const {
 	return "Rule: " + left->show() + " = " + right->show();
 }
+Rule::~Rule() {
+	if (left) delete left;
+	if (right) delete right;
+}
 
 Grammar& Grammar::operator << (Rule&& rule) {
-	rules.push_back(rule);
-	rule.left->complete(this);
-	rule.right->complete(this);
+	rules.push_back(new Rule{rule.left, rule.right});
+	rules.back()->left->complete(this);
+	rules.back()->right->complete(this);
+	rule.left = nullptr;
+	rule.right = nullptr;
 	return *this;
 }
 
