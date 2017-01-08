@@ -25,6 +25,7 @@ struct Grammar {
 	map<string, Symb*> symb_map;
 	vector<Symb*>      symbs;
 	vector<Rule*>      rules;
+	vector<Syntagma*>  to_flaten;
 	Skipper*           skipper;
 
 	Grammar& operator << (Symb* s) {
@@ -50,12 +51,13 @@ struct Grammar {
 		ret += "\n";
 		return ret;
 	}
-	Grammar(const string& n) : name(n), symb_map(), symbs(), rules(),
-		skipper([](char c)->bool {return c <= ' '; }), c(0) { }
+	Grammar(const string& n);
 	~Grammar() {
 		for (Symb* s : symbs) delete s;
 		for (Rule* r : rules) delete r;
 	}
+
+	void flaten_ebnf();
 
 private :
 	int c;

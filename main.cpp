@@ -52,6 +52,7 @@ void oberon_grammar(Grammar& gr) {
 void test_1() {
 	Grammar gr("test");
 	test_grammar(gr);
+	gr.flaten_ebnf();
 	Parser p(gr);
 	std::cout << p.getGrammar().show() << std::endl;
 
@@ -86,6 +87,8 @@ void test_1() {
 void test_ober() {
 	Grammar gr("oberon");
 	oberon_grammar(gr);
+	std::cout << gr.show() << std::endl;
+	gr.flaten_ebnf();
 	//Parser p(gr);
 	std::cout << gr.show() << std::endl;
 }
