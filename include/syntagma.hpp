@@ -81,8 +81,13 @@ struct Seq : public Operator {
 		// beta N:
 		Seq* seq = new Seq({});
 		// beta:
-		for (Syntagma* s : operands) seq->operands.push_back(s);
+		for (Syntagma* s : operands) {
+			seq->operands.push_back(s);
+			s->parent = seq;
+			s->place = &seq->operands.back();
+		}
 		operands.clear();
+		if (place) *place = nullptr;
 		return {new Rule{new Ref(name), seq}};
 	}
 	virtual void complete(Grammar* grammar) {
@@ -107,8 +112,13 @@ struct Alt : public Operator {
 	 */
 	virtual vector<Rule*> flaten(const string& name) {
 		vector<Rule*> rules;
-		for (Syntagma* s : operands) rules.push_back(new Rule(new Ref(name), s));
+		for (Syntagma* s : operands) {
+			rules.push_back(new Rule{new Ref(name), s});
+			s->parent = nullptr;
+			s->place = nullptr;
+		}
 		operands.clear();
+		if (place) *place = nullptr;
 		return rules;
 	}
 	virtual void complete(Grammar* grammar) {
@@ -133,10 +143,15 @@ struct Iter : public Operator {
 		// beta N:
 		Seq* seq = new Seq({});
 		// beta:
-		for (Syntagma* s : operands) seq->operands.push_back(s);
+		for (Syntagma* s : operands) {
+			seq->operands.push_back(s);
+			s->parent = seq;
+			s->place = &seq->operands.back();
+		}
 		// N:
 		seq->operands.push_back(new Ref(name));
 		operands.clear();
+		if (place) *place = nullptr;
 		return {new Rule{new Ref(name), new Alt({new Ref(""), seq})}};
 	}
 	virtual void complete(Grammar* grammar) {
@@ -160,8 +175,13 @@ struct Opt : public Operator {
 	virtual vector<Rule*> flaten(const string& name) {
 		Seq* seq = new Seq({});
 		// beta:
-		for (Syntagma* s : operands) seq->operands.push_back(s);
+		for (Syntagma* s : operands) {
+			seq->operands.push_back(s);
+			s->parent = seq;
+			s->place = &seq->operands.back();
+		}
 		operands.clear();
+		if (place) *place = nullptr;
 		return {new Rule{new Ref(name), new Alt({new Ref(""), seq})}};
 	}
 	virtual void complete(Grammar* grammar) {
@@ -221,7 +241,7 @@ void Grammar::flaten_ebnf() {
 			rules.push_back(r);
 			std::cout << "new rule: " << r->show() << std::endl;
 		}
-		delete s;
+		//delete s;
 
 		std::cout << std::endl;
 	}

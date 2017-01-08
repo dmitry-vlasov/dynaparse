@@ -20,10 +20,26 @@ void oberon_grammar(Grammar& gr) {
 	<< Keywords({"(", "MODULE", "BEGIN", "END", ";", ".", ":", "CONST", "TYPE", "VAR", "IMPORT", ":=",  ",", "="})
 
 	<< Rule(R("Module"), Seq({
-	R("MODULE"), R("ident"), R(";"), Opt({R("ImportList")}), R("DeclSeq"), Opt({R("BEGIN"), R("StatementSeq")}), R("END"), R("ident"), R(".")
+		R("MODULE"),
+		R("ident"),
+		R(";"),
+		Opt({R("ImportList")}),
+		R("DeclSeq"),
+		Opt({R("BEGIN"), R("StatementSeq")}),
+		R("END"),
+		R("ident"),
+		R(".")
 	}))
 	<< Rule(R("ImportList"), Seq({
-	R("IMPORT"), Opt({R("ident"), R(":=")}), R("ident"), Iter({R(","), Opt({R("ident"), R(":=")}), R("ident")}), R(";")
+		R("IMPORT"),
+		Opt({R("ident"), R(":=")}),
+		R("ident"),
+		Iter({
+			R(","),
+			Opt({R("ident"), R(":=")}),
+			R("ident")
+		}),
+		R(";")
 	}))
 	<< Rule(R("DeclSeq"), Seq({
 		Iter(
