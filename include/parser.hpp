@@ -13,17 +13,17 @@ typedef vector<Node> Tree;
 struct Node {
 	bool   final;
 	Tree   next;
-	const Syntagma* symb;
+	const Symb* symb;
 	const Tree* tree;
 	const Rule* rule;
 };
 
-inline Node createNode(map<string, Tree>& trees, Skipper* skipper, const Syntagma* s) {
+inline Node createNode(map<string, Tree>& trees, Skipper* skipper, const Symb* s) {
 	Node n;
 	n.symb = s;
 	n.rule = nullptr;
 	n.tree = nullptr;
-	if (const Nonterm* nt = dynamic_cast<const Nonterm*>(s)) {
+	if (const symb::Nonterm* nt = dynamic_cast<const symb::Nonterm*>(s)) {
 		assert(nt && "must be non-terminal");
 		assert(trees.count(nt->name) && "non-terminal is not declared");
 		n.tree = &trees.at(nt->name);
@@ -35,10 +35,15 @@ inline Node* add(map<string, Tree>& trees, Skipper* skipper, Tree& tree, vector<
 	assert(ex.size());
 	Tree* m = &tree;
 	Node* n = nullptr;
-	for (Syntagma* s : ex) {
+	for (Syntagma* ss : ex) {
+		rule::Ref* r = dynamic_cast<rule::Ref*>(ss);
+		if (!r) {
+			std::cerr << "syntagma " << ss->show() << " must be a symbol reference" <<std::endl;
+			throw std::exception();
+		}
 		bool new_symb = true;
 		for (Node& p : *m) {
-			if (p.symb->equals(s)) {
+			if (p.symb->equals(r->ref)) {
 				n = &p;
 				m = &p.next;
 				new_symb = false;
@@ -47,7 +52,7 @@ inline Node* add(map<string, Tree>& trees, Skipper* skipper, Tree& tree, vector<
 		}
 		if (new_symb) {
 			if (m->size()) m->back().final = false;
-			m->push_back(createNode(trees, skipper, s));
+			m->push_back(createNode(trees, skipper, r->ref));
 			n = &m->back();
 			n->final = true;
 			m = &n->next;
@@ -89,6 +94,7 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 	StrIter ch = beg;
 	while (!n.empty() && !m.empty()) {
 		ch = m.top();
+		StrIter c = ch;
 		if (const Tree* deeper = n.top()->tree) {
 			childnodes.push(n.top());
 			if (Expr* child = parse_LL(ch, end, skipper, *deeper, n.top() == tree.begin())) {
@@ -102,6 +108,7 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 				childnodes.pop();
 			}
 		} else if (n.top()->symb->matches(skipper, ch, end)) {
+			children.push_back(new expr::Lexeme(c, ch));
 			switch (act(n, m, beg, ch, end, skipper, rule)) {
 			case Action::RET  : beg = ch; return new expr::Seq(b, ch, rule, children);
 			case Action::BREAK: return nullptr;
@@ -128,17 +135,17 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 class Parser {
 public :
 	Parser(Grammar& gr) : grammar(gr), trees() {
-		for (Syntagma* s : grammar.syntagmas) {
-			if (Rule* rule = dynamic_cast<Rule*>(s)) {
-				trees[rule->left->name];
+		for (Symb* s : grammar.symbs) {
+			if (symb::Nonterm* nt = dynamic_cast<symb::Nonterm*>(s)) {
+				trees[nt->name];
 			}
 		}
-		for (Syntagma* s : grammar.syntagmas) {
-			if (Rule* rule = dynamic_cast<Rule*>(s)) {
-				parser::Tree& tree = trees[rule->left->name];
-				parser::Node* n = add(trees, gr.skipper, tree, rule->right);
-				n->rule = rule;
-			}
+		for (Rule& rule : grammar.rules) {
+			rule::Ref* nt = dynamic_cast<rule::Ref*>(rule.left);
+			rule::Operator* op = dynamic_cast<rule::Operator*>(rule.right);
+			parser::Tree& tree = trees[nt->name];
+			parser::Node* n = add(trees, gr.skipper, tree, op->operands);
+			n->rule = &rule;
 		}
 	}
 	Expr* parse(string& src, const string& type);

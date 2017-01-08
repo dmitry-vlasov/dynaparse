@@ -1,65 +1,35 @@
 #pragma once
 
-#include "std.hpp"
+#include "symb.hpp"
 
 namespace dynaparse {
 
-typedef bool (Skipper) (char);
-typedef string::const_iterator StrIter;
+struct Syntagma;
 
-inline void skip(Skipper* skipper, StrIter& ch, StrIter end){
-	while (ch != end && skipper(*ch)) ++ch;
-}
-
-struct Expr {
-	StrIter beg;
-	StrIter end;
-	Expr() : beg(), end() { }
-	Expr(StrIter b, StrIter e) : beg(b), end(e) { }
-	virtual ~Expr() {  }
-	virtual string show() const  = 0;
-};
-
-typedef Expr* (Semantic) (vector<Expr*>&);
-
-struct Grammar;
-
-struct Syntagma {
-	string name;
-	Syntagma(const Syntagma&) = default;
-	Syntagma(const string& n) : name(n) { }
-	virtual ~ Syntagma() { }
-	virtual string show_def() const = 0;
-	virtual string show_ref() const { return name; }
-	virtual bool matches(Skipper* skipper, StrIter& ch, StrIter end) const  = 0;
-	virtual bool equals(const Syntagma*) const = 0;
-	virtual void complete(Grammar*) { }
-	virtual Syntagma* clone() const = 0;
-};
-
-struct Syntagmas {
-	vector<Syntagma*> syntagmas;
+struct Rule {
+	Rule(Syntagma* l, Syntagma* r) : left(l), right(r) { }
+	Syntagma* left;
+	Syntagma* right;
+	string show() const;
 };
 
 struct Grammar {
-	string                 name;
-	map<string, Syntagma*> synt_map;
-	vector<Syntagma*>      syntagmas;
-	Skipper*               skipper;
+	string             name;
+	map<string, Symb*> symb_map;
+	vector<Symb*>      symbs;
+	vector<Rule>       rules;
+	Skipper*           skipper;
 
-	Grammar& operator << (Syntagma* s) {
-		syntagmas.push_back(s);
-		synt_map[s->name] = s;
-		s->complete(this);
+	Grammar& operator << (Symb* s) {
+		symbs.push_back(s);
+		symb_map[s->name] = s;
 		return *this;
 	}
 
-	Grammar& operator << (Syntagma&& s) {
-		return operator << (s.clone());
-	}
+	Grammar& operator << (Rule&& rule);
 
-	Grammar& operator << (Syntagmas&& ss) {
-		for (Syntagma* s : ss.syntagmas) operator << (s);
+	Grammar& operator << (Symbs&& ss) {
+		for (Symb* s : ss.symbs) operator << (s);
 		return *this;
 	}
 
@@ -67,12 +37,15 @@ struct Grammar {
 		string ret;
 		ret += "Grammar " + name + "\n";
 		ret += "--------------------\n";
-		for (auto s : syntagmas) ret += s->show_def() + "\n";
+		for (auto symb : symbs) ret += symb->show() + "\n";
+		ret += "\n";
+		for (auto& rule : rules) ret += rule.show() + "\n";
 		ret += "\n";
 		return ret;
 	}
-	Grammar(const string& n) : name(n), synt_map(), syntagmas(), skipper([](char c)->bool {return c <= ' '; }), c(0) { }
-	~Grammar() { for (Syntagma* s : syntagmas) delete s; }
+	Grammar(const string& n) : name(n), symb_map(), symbs(), rules(),
+		skipper([](char c)->bool {return c <= ' '; }), c(0) { }
+	~Grammar() { for (Symb* s : symbs) delete s; }
 
 private :
 	int c;

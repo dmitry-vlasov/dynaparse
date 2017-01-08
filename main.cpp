@@ -4,45 +4,15 @@ using namespace dynaparse;
 
 void test_grammar(Grammar& gr) {
 	gr
-	<< Nonterm("exp")
+	<< Nonterms({"exp"})
 	<< Keywords({"(", "+", ")", "*"})
-	<< Seq("plus", "exp", {"(", "exp", "+", "exp", ")"})
-	<< Seq("plus", "exp", {"(", "exp", "*", "exp", ")"})
 	<< Regexp("id", "[a-zA-Z]+")
-	<< Seq("ident", "exp", vector<string>{"id"});
 
-
-	//gr << new synt::Seq("AAA", "exp", {new synt::Seq("AA"), new Keyword("(")});
-
-	/*
-	gr << new synt::Seq("ImportList", "ImportList",
-		{
-			new Keyword("IMPORT"),
-			new synt::Opt(
-				{
-					new Regexp("ident", ""),
-					new Keyword(":=")
-				}
-			),
-			new Regexp("ident", ""),
-			new synt::Iter(
-				{
-					new Keyword(","),
-					new synt::Opt(
-						{
-							new Regexp("ident", ""),
-							new Keyword(":=")
-						}
-					),
-					new Regexp("ident", "")
-				}
-			),
-			new Keyword(";")
-		}
-	);
-	*/
+	<< Rule(R("exp"), Seq({R("("), R("exp"), R("+"), R("exp"), R(")")}))
+	<< Rule(R("exp"), Seq({R("("), R("exp"), R("*"), R("exp"), R(")")}))
+	<< Rule(R("exp"), Seq({R("id")}));
 }
-
+/*
 void oberon_grammar(Grammar& gr) {
 	gr
 	<< Nonterms({"Module", "ImportList", "ident", "DeclSeq", "StatementSeq", "DeclSeq", "ConstDecl", "TypeDecl", "VarDecl", "Type"})
@@ -77,7 +47,7 @@ void oberon_grammar(Grammar& gr) {
 	<< Seq("VarDecl", "VarDecl", {NT("IdentList"), KW(":"), NT("Type")});
 }
 
-
+*/
 void test_1() {
 	Grammar gr("test");
 	test_grammar(gr);

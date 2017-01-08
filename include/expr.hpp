@@ -3,89 +3,56 @@
 #include "syntagma.hpp"
 
 namespace dynaparse {
+
+struct Expr {
+	StrIter beg;
+	StrIter end;
+	Expr(StrIter b, StrIter e) : beg(b), end(e) { }
+	virtual ~Expr() {  }
+	virtual string show() const  = 0;
+};
+
+typedef Expr* (Semantic) (vector<Expr*>&);
+
 namespace expr {
 
-struct Seq : public Expr {
-	Seq(const StrIter beg, StrIter end, const Rule* r, vector<Expr*> v) :
-		Expr(beg, end), nodes(new Expr*[v.size()]), size(v.size()), rule(dynamic_cast<const rule::Seq*>(r)) {
-		for (int i = 0; i < size; ++ i) nodes[i] = v[i];
-	}
-	virtual ~Seq() {
-		for (int i = 0; i < size; ++ i) delete nodes[i];
-		delete[] nodes;
-	}
-	Expr** nodes;
-	int    size;
-	const rule::Seq* rule;
-	virtual string show() const {
-		if (!rule) return "null";
-		string ret;
-		if (rule->is_leaf) {
-			return string(beg, end);
-		}
-		int i = 0;
-		for (auto p : rule->right) {
-			if (const Keyword* kw = dynamic_cast<const Keyword*>(p)) {
-				ret += kw->body;
-			} else if (const Regexp* re = dynamic_cast<const Regexp*>(p)) {
-				ret += re->name;
-			} else {
-				ret += nodes[i ++]->show();
-			}
-		}
-		return ret;
-	}
+struct Lexeme : public Expr {
+	Lexeme(StrIter b, StrIter e) : Expr(b, e) { }
+	virtual ~Lexeme() {  }
+	virtual string show() const { return string(beg, end); }
 };
 
-struct Iter : public Expr {
-	Iter() : Expr(), nodes(), rule(nullptr) { }
-	virtual ~Iter() { for (Expr* e : nodes) delete e; }
+struct Operator : public Expr {
+	Operator(const StrIter beg, StrIter end, const Rule* r, vector<Expr*> v) :
+		Expr(beg, end), nodes(v), rule(r) { }
+	virtual ~Operator() {
+		for (auto n : nodes) delete n;
+	}
 	vector<Expr*> nodes;
-	const rule::Iter* rule;
+	const Rule*   rule;
 	virtual string show() const {
+		assert(rule && "rule must be non nullptr");
 		if (!rule) return "null";
 		string ret;
-		if (rule->is_leaf) return string(beg, end);
-		int i = 0;
-		for (auto p : rule->right) {
-			if (const Keyword* kw = dynamic_cast<const Keyword*>(p)) {
-				ret += kw->body;
-			} else if (const Regexp* re = dynamic_cast<const Regexp*>(p)) {
-				ret += re->name;
-			} else {
-				ret += nodes[i ++]->show();
-			}
-		}
+		for (auto n : nodes) ret += n->show();
 		return ret;
 	}
 };
 
-struct Alter : public Expr {
-	Alter() : Expr(), node(nullptr), rule(nullptr) { }
-	virtual ~Alter() { if (node) delete node; }
-	Expr* node;
-	const rule::Alt* rule;
-	virtual string show() const {
-		if (!rule) return "null";
-		string ret;
-		if (rule->is_leaf) return string(beg, end);
-		if (node) ret += node->show();
-		return ret;
-	}
+struct Seq : public Operator {
+	Seq(const StrIter b, StrIter e, const Rule* r, vector<Expr*> v) : Operator(b, e, r, v) { }
 };
 
-struct Opt : public Expr {
-	Opt() : Expr(), node(nullptr), rule(nullptr) { }
-	virtual ~Opt() { if (node) delete node; }
-	Expr* node;
-	const rule::Opt* rule;
-	virtual string show() const {
-		if (!rule) return "null";
-		string ret;
-		if (rule->is_leaf) return string(beg, end);
-		if (node) ret += node->show();
-		return ret;
-	}
+struct Iter : public Operator {
+	Iter(const StrIter b, StrIter e, const Rule* r, vector<Expr*> v) : Operator(b, e, r, v) { }
+};
+
+struct Alt : public Operator {
+	Alt(const StrIter b, StrIter e, const Rule* r, vector<Expr*> v) : Operator(b, e, r, v) { }
+};
+
+struct Opt : public Operator {
+	Opt(const StrIter b, StrIter e, const Rule* r, vector<Expr*> v) : Operator(b, e, r, v) { }
 };
 
 } // namespace expr
