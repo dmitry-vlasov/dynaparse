@@ -11,8 +11,8 @@ typedef vector<Syntagma*>::iterator OperIter;
 
 struct Syntagma {
 	rule::Operator* parent;
-	Syntagma**      place;
-	Syntagma() : parent(nullptr), place(nullptr) { }
+	rule::OperIter  place;
+	Syntagma() : parent(nullptr), place() { }
 	virtual ~ Syntagma() { }
 	virtual string show() const = 0;
 	virtual void complete(Grammar* grammar) = 0;
@@ -42,9 +42,9 @@ struct Ref : public Syntagma {
 struct Operator : public Syntagma {
 	vector<Syntagma*> operands;
 	Operator(const vector<Syntagma*>& op) : operands(op) {
-		for (Syntagma*& op : operands) {
-			op->place = &op;
-			op->parent = this;
+		for (OperIter i = operands.begin(); i != operands.end(); ++ i) {
+			(*i)->place = i;
+			(*i)->parent = this;
 		}
 	}
 	virtual ~ Operator() { for (auto s : operands) delete s; }
@@ -78,16 +78,9 @@ struct Seq : public Operator {
 	 *  	N -> beta
 	 */
 	virtual vector<Rule*> flaten(const string& name) {
-		// beta N:
-		Seq* seq = new Seq({});
 		// beta:
-		for (Syntagma* s : operands) {
-			seq->operands.push_back(s);
-			s->parent = seq;
-			s->place = &seq->operands.back();
-		}
+		Seq* seq = new Seq(operands);
 		operands.clear();
-		if (place) *place = nullptr;
 		return {new Rule{new Ref(name), seq}};
 	}
 	virtual void complete(Grammar* grammar) {
@@ -115,10 +108,9 @@ struct Alt : public Operator {
 		for (Syntagma* s : operands) {
 			rules.push_back(new Rule{new Ref(name), s});
 			s->parent = nullptr;
-			s->place = nullptr;
+			s->place = OperIter();
 		}
 		operands.clear();
-		if (place) *place = nullptr;
 		return rules;
 	}
 	virtual void complete(Grammar* grammar) {
@@ -140,18 +132,11 @@ struct Iter : public Operator {
 	 *  	N -> "" | beta N
 	 */
 	virtual vector<Rule*> flaten(const string& name) {
-		// beta N:
-		Seq* seq = new Seq({});
-		// beta:
-		for (Syntagma* s : operands) {
-			seq->operands.push_back(s);
-			s->parent = seq;
-			s->place = &seq->operands.back();
-		}
 		// N:
-		seq->operands.push_back(new Ref(name));
+		operands.push_back(new Ref(name));
+		// beta:
+		Seq* seq = new Seq(operands);
 		operands.clear();
-		if (place) *place = nullptr;
 		return {new Rule{new Ref(name), new Alt({new Ref(""), seq})}};
 	}
 	virtual void complete(Grammar* grammar) {
@@ -173,15 +158,10 @@ struct Opt : public Operator {
 	 *  	N -> "" | beta
 	 */
 	virtual vector<Rule*> flaten(const string& name) {
-		Seq* seq = new Seq({});
 		// beta:
-		for (Syntagma* s : operands) {
-			seq->operands.push_back(s);
-			s->parent = seq;
-			s->place = &seq->operands.back();
-		}
+		Seq* seq = new Seq(operands);
+		// beta:
 		operands.clear();
-		if (place) *place = nullptr;
 		return {new Rule{new Ref(name), new Alt({new Ref(""), seq})}};
 	}
 	virtual void complete(Grammar* grammar) {
@@ -223,6 +203,7 @@ void Grammar::flaten_ebnf() {
 	for (Syntagma* s : to_flaten) {
 
 		std::cout << "flatening: " << s->show() << std::endl;
+		std::cout << "with parent: " << (s->parent ? s->parent->show() : "NONE") << std::endl;
 
 		string nt = "N_" + std::to_string(c++);
 		vector<Rule*> flat_rules = s->flaten(nt);
@@ -231,10 +212,10 @@ void Grammar::flaten_ebnf() {
 
 		std::cout << "new nonterm: " << ne->show() << std::endl;
 
-		if (s->place) {
+		if (s->place != rule::OperIter()) {
 			rule::Ref* ref = new rule::Ref(nt);
 			ref->ref = ne;
-			*s->place = ref;
+			*(s->place) = ref;
 		}
 		for (Rule* r : flat_rules) {
 			dynamic_cast<rule::Ref*>(r->left)->ref = ne;
