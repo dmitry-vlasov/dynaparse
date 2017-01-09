@@ -106,9 +106,9 @@ struct Alt : public Operator {
 	virtual vector<Rule*> flaten(const string& name) {
 		vector<Rule*> rules;
 		for (Syntagma* s : operands) {
-			rules.push_back(new Rule{new Ref(name), s});
 			s->parent = nullptr;
 			s->place = OperIter();
+			rules.push_back(new Rule{new Ref(name), s});
 		}
 		operands.clear();
 		return rules;
@@ -203,26 +203,26 @@ void Grammar::flaten_ebnf() {
 	for (Syntagma* s : to_flaten) {
 
 		std::cout << "flatening: " << s->show() << std::endl;
-		std::cout << "with parent: " << (s->parent ? s->parent->show() : "NONE") << std::endl;
+		//std::cout << "with parent: " << (s->parent ? s->parent->show() : "NONE") << std::endl;
 
 		string nt = "N_" + std::to_string(c++);
 		vector<Rule*> flat_rules = s->flaten(nt);
 		symb::Nonterm* ne = new symb::Nonterm(nt);
 		operator << (ne);
 
-		std::cout << "new nonterm: " << ne->show() << std::endl;
+		//std::cout << "new nonterm: " << ne->show() << std::endl;
 
 		if (s->place != rule::OperIter()) {
 			rule::Ref* ref = new rule::Ref(nt);
 			ref->ref = ne;
 			*(s->place) = ref;
+			delete s;
 		}
 		for (Rule* r : flat_rules) {
 			dynamic_cast<rule::Ref*>(r->left)->ref = ne;
 			rules.push_back(r);
-			std::cout << "new rule: " << r->show() << std::endl;
+			std::cout << "new rule: " << rules.back()->show() << std::endl;
 		}
-		//delete s;
 
 		std::cout << std::endl;
 	}
