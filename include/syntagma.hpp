@@ -27,6 +27,7 @@ struct Ref : public Syntagma {
 	string name;
 	Symb*  ref;
 	Ref(const string& n) : name(n), ref(nullptr) { }
+	Ref(const string& n, Symb* r) : name(n), ref(r) { }
 	virtual ~ Ref() { }
 	virtual string show() const { return name; }
 	virtual void complete(Grammar* grammar) {
@@ -52,6 +53,7 @@ struct Operator : public Syntagma {
 		return show_with_delim(" ");
 	}
 	virtual void complete(Grammar* grammar) {
+		grammar->to_flaten.push(this);
 		for (auto s : operands) s->complete(grammar);
 	}
 protected :
@@ -83,10 +85,6 @@ struct Seq : public Operator {
 		operands.clear();
 		return {new Rule{new Ref(name), seq}};
 	}
-	virtual void complete(Grammar* grammar) {
-		if (parent) grammar->to_flaten.push_back(this);
-		Operator::complete(grammar);
-	}
 };
 
 struct Alt : public Operator {
@@ -113,10 +111,6 @@ struct Alt : public Operator {
 		operands.clear();
 		return rules;
 	}
-	virtual void complete(Grammar* grammar) {
-		grammar->to_flaten.push_back(this);
-		Operator::complete(grammar);
-	}
 };
 
 struct Iter : public Operator {
@@ -137,11 +131,7 @@ struct Iter : public Operator {
 		// beta:
 		Seq* seq = new Seq(operands);
 		operands.clear();
-		return {new Rule{new Ref(name), new Alt({new Ref(""), seq})}};
-	}
-	virtual void complete(Grammar* grammar) {
-		grammar->to_flaten.push_back(this);
-		Operator::complete(grammar);
+		return {new Rule{new Ref(name), new Alt({Grammar::empty_nonterm_ref(), seq})}};
 	}
 };
 
@@ -162,11 +152,7 @@ struct Opt : public Operator {
 		Seq* seq = new Seq(operands);
 		// beta:
 		operands.clear();
-		return {new Rule{new Ref(name), new Alt({new Ref(""), seq})}};
-	}
-	virtual void complete(Grammar* grammar) {
-		grammar->to_flaten.push_back(this);
-		Operator::complete(grammar);
+		return {new Rule{new Ref(name), new Alt({Grammar::empty_nonterm_ref(), seq})}};
 	}
 };
 
@@ -181,25 +167,90 @@ Rule::~Rule() {
 }
 
 Grammar::Grammar(const string& n) : name(n), symb_map(), symbs(), rules(), to_flaten(),
-	skipper([](char c)->bool {return c <= ' '; }), c(0) {
+	skipper([](char c)->bool {return c <= ' '; }), empty_rule(nullptr), c(0) {
 	operator << (Keyword(""));
 }
 
 Grammar& Grammar::operator << (Rule&& rule) {
-	rules.push_back(new Rule{rule.left, rule.right});
-	rules.back()->left->complete(this);
-	rules.back()->right->complete(this);
+	add(new Rule{rule.left, rule.right});
 	rule.left = nullptr;
 	rule.right = nullptr;
 	return *this;
 }
 
+void Grammar::add(Rule* r) {
+	rules.push_back(r);
+	rules.back()->left->complete(this);
+	rules.back()->right->complete(this);
+}
+
+Symb* Grammar::empty_symb() {
+	static Symb* empty = new symb::Keyword("");
+	return empty;
+}
+
+Symb* Grammar::empty_nonterm() {
+	static Symb* empty = new symb::Nonterm("EMPTY");
+	return empty;
+}
+
+Syntagma* Grammar::empty_symb_ref() {
+	static Syntagma* empty = new rule::Ref("", empty_symb());
+	return empty;
+}
+
+Syntagma* Grammar::empty_nonterm_ref() {
+	static Syntagma* empty = new rule::Ref("EMPTY", empty_nonterm());
+	return empty;
+}
+
+Grammar& Grammar::operator << (Symb* s) {
+	symbs.push_back(s);
+	symb_map[s->name] = s;
+	if ((s == empty_symb() || s == empty_nonterm()) && !empty_rule) {
+		empty_rule = new Rule(empty_nonterm_ref(), empty_symb_ref());
+	}
+	return *this;
+}
+
+
 void Grammar::flaten_ebnf() {
+/*
 	for (Syntagma* s : to_flaten) {
 		std::cout << "TO FLATTEN: " << s->show() << std::endl;
 	}
 	std::cout << std::endl << std::endl;
+*/
 
+	while (!to_flaten.empty()) {
+		Syntagma* s = to_flaten.front(); to_flaten.pop();
+		if (dynamic_cast<rule::Seq*>(s)) continue;
+		if (!s->parent && !dynamic_cast<rule::Alt*>(s)) continue;
+
+		std::cout << "flatening: " << s->show() << std::endl;
+		//std::cout << "with parent: " << (s->parent ? s->parent->show() : "NONE") << std::endl;
+
+		string nt = "N_" + std::to_string(c++);
+		vector<Rule*> flat_rules = s->flaten(nt);
+		symb::Nonterm* ne = new symb::Nonterm(nt);
+		operator << (ne);
+
+		//std::cout << "new nonterm: " << ne->show() << std::endl;
+
+		if (s->place != rule::OperIter()) {
+			rule::Ref* ref = new rule::Ref(nt);
+			ref->ref = ne;
+			*(s->place) = ref;
+			//delete s;
+		}
+		for (Rule* r : flat_rules) {
+			add(r);
+			//dynamic_cast<rule::Ref*>(r->left)->ref = ne;
+			//rules.push_back(r);
+			std::cout << "new rule: " << rules.back()->show() << std::endl;
+		}
+	}
+/*
 	for (Syntagma* s : to_flaten) {
 
 		if (!s->parent && !dynamic_cast<rule::Alt*>(s)) continue;
@@ -231,6 +282,7 @@ void Grammar::flaten_ebnf() {
 
 	}
 	to_flaten.clear();
+*/
 }
 
 inline Syntagma* R(const string& s) { return new rule::Ref(s); }

@@ -25,21 +25,23 @@ struct Grammar {
 	map<string, Symb*> symb_map;
 	vector<Symb*>      symbs;
 	vector<Rule*>      rules;
-	vector<Syntagma*>  to_flaten;
+	queue<Syntagma*>   to_flaten;
 	Skipper*           skipper;
+	Rule*              empty_rule;
 
-	Grammar& operator << (Symb* s) {
-		symbs.push_back(s);
-		symb_map[s->name] = s;
-		return *this;
-	}
+	static Symb* empty_symb();
+	static Symb* empty_nonterm();
+	static Syntagma* empty_symb_ref();
+	static Syntagma* empty_nonterm_ref();
 
+	Grammar& operator << (Symb* s);
 	Grammar& operator << (Rule&& rule);
-
 	Grammar& operator << (Symbs&& ss) {
 		for (Symb* s : ss.symbs) operator << (s);
 		return *this;
 	}
+
+	void add(Rule* r);
 
 	string show() const {
 		string ret;
@@ -61,6 +63,23 @@ struct Grammar {
 
 private :
 	int c;
+};
+
+inline Symb* Keyword(const string& n) { return n.size() ? new symb::Keyword(n) : Grammar::empty_symb(); }
+inline Symb* Keyword(const string& n, const string& b) { return n.size() ? new symb::Keyword(n, b) : Grammar::empty_symb(); }
+inline Symb* Nonterm(const string& n) { return new symb::Nonterm(n); }
+inline Symb* Regexp(const string& n, const string& b) { return new symb::Regexp(n, b); }
+
+struct Nonterms : public Symbs {
+	Nonterms(const vector<string>& nt) {
+		for (const string& s : nt) symbs.push_back(new symb::Nonterm(s));
+	}
+};
+
+struct Keywords : public Symbs {
+	Keywords(const vector<string>& kws) {
+		for (const string& kw : kws) symbs.push_back(new symb::Keyword(kw));
+	}
 };
 
 }

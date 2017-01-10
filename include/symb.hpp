@@ -83,21 +83,4 @@ struct Regexp : public Lexeme {
 
 }
 
-inline Symb* Keyword(const string& n) { return new symb::Keyword(n); }
-inline Symb* Keyword(const string& n, const string& b) { return new symb::Keyword(n, b); }
-inline Symb* Nonterm(const string& n) { return new symb::Nonterm(n); }
-inline Symb* Regexp(const string& n, const string& b) { return new symb::Regexp(n, b); }
-
-struct Nonterms : public Symbs {
-	Nonterms(const vector<string>& nt) {
-		for (const string& s : nt) symbs.push_back(new symb::Nonterm(s));
-	}
-};
-
-struct Keywords : public Symbs {
-	Keywords(const vector<string>& kws) {
-		for (const string& kw : kws) symbs.push_back(new symb::Keyword(kw));
-	}
-};
-
 }
