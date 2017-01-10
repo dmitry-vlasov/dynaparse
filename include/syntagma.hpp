@@ -202,6 +202,8 @@ void Grammar::flaten_ebnf() {
 
 	for (Syntagma* s : to_flaten) {
 
+		if (!s->parent && !dynamic_cast<rule::Alt*>(s)) continue;
+
 		std::cout << "flatening: " << s->show() << std::endl;
 		//std::cout << "with parent: " << (s->parent ? s->parent->show() : "NONE") << std::endl;
 
@@ -224,7 +226,9 @@ void Grammar::flaten_ebnf() {
 			std::cout << "new rule: " << rules.back()->show() << std::endl;
 		}
 
-		std::cout << std::endl;
+		//std::cout << std::endl << "----------------------";
+		//std::cout << this->show() << std::endl << "------------------" << std::endl;
+
 	}
 	to_flaten.clear();
 }
