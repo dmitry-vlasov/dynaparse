@@ -29,4 +29,7 @@ using std::set;
 using std::regex;
 using std::queue;
 
+using std::cout;
+using std::endl;
+
 }
