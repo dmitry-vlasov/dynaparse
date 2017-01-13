@@ -105,6 +105,7 @@ void test_ober() {
 	oberon_grammar(gr);
 	std::cout << gr.show() << std::endl;
 	gr.flaten_ebnf();
+	std::cout << gr.show() << std::endl;
 	Parser p(gr);
 	std::cout << gr.show() << std::endl;
 }

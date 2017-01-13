@@ -143,7 +143,7 @@ public :
 		}
 		for (Rule* rule : grammar.rules) {
 			rule::Ref* nt = dynamic_cast<rule::Ref*>(rule->left);
-			rule::Operator* op = dynamic_cast<rule::Operator*>(rule->right);
+			rule::NaryOperator* op = dynamic_cast<rule::NaryOperator*>(rule->right);
 			parser::Tree& tree = trees[nt->name];
 			parser::Node* n = add(trees, tree, op->operands);
 			n->rule = rule;

@@ -6,12 +6,20 @@ namespace dynaparse {
 
 struct Syntagma;
 
+namespace rule {
+struct Ref;
+struct Operator;
+}
+
+
 struct Rule {
-	Rule(Syntagma* l, Syntagma* r) : left(l), right(r) { }
+	Rule(Syntagma* l, Syntagma* r);
 	~ Rule();
-	Syntagma* left;
-	Syntagma* right;
+	rule::Ref* left;
+	Syntagma*  right;
 	string show() const;
+	Rule* clone() const;
+	Rule* clone(map<Syntagma*, Syntagma*>&) const;
 };
 
 typedef bool (Skipper) (char);
@@ -27,6 +35,7 @@ struct Grammar {
 	vector<Rule*>      rules;
 	set<Syntagma*>     to_flaten;
 	Skipper*           skipper;
+	int                fresh_nonterm_index;
 
 	Grammar& operator << (Symb* s);
 	Grammar& operator << (Rule&& rule);
@@ -37,12 +46,14 @@ struct Grammar {
 
 	void add(Rule* r);
 
-	string show() const {
+	string show(bool short_ = true) const {
 		string ret;
-		ret += "Grammar " + name + "\n";
-		ret += "--------------------\n";
-		for (auto symb : symbs) ret += symb->show() + "\n";
-		ret += "\n";
+		if (!short_) {
+			ret += "Grammar " + name + "\n";
+			ret += "--------------------\n";
+			for (auto symb : symbs) ret += symb->show() + "\n";
+			ret += "\n";
+		}
 		for (auto rule : rules) ret += rule->show() + "\n";
 		ret += "\n";
 		return ret;
@@ -55,24 +66,11 @@ struct Grammar {
 
 	void flaten_ebnf();
 
-private :
-	int c;
-};
-
-inline Symb* Keyword(const string& n) { return new symb::Keyword(n); }
-inline Symb* Keyword(const string& n, const string& b) { return new symb::Keyword(n, b); }
-inline Symb* Nonterm(const string& n) { return new symb::Nonterm(n); }
-inline Symb* Regexp(const string& n, const string& b) { return new symb::Regexp(n, b); }
-
-struct Nonterms : public Symbs {
-	Nonterms(const vector<string>& nt) {
-		for (const string& s : nt) symbs.push_back(new symb::Nonterm(s));
-	}
-};
-
-struct Keywords : public Symbs {
-	Keywords(const vector<string>& kws) {
-		for (const string& kw : kws) symbs.push_back(new symb::Keyword(kw));
+	symb::Nonterm* fresh_nonterm() {
+		string nn = "N_" + std::to_string(fresh_nonterm_index++);
+		symb::Nonterm* nt = new symb::Nonterm(nn);
+		operator << (nt);
+		return nt;
 	}
 };
 
