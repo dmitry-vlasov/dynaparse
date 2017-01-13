@@ -113,6 +113,7 @@ void test_ober() {
 int main(int argc, const char* argv[]) {
 	test_1();
 	test_ober();
+	std::cout << "SUCCESS" << std::endl;
 	return 0;
 }
 

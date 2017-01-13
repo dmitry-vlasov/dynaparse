@@ -33,7 +33,7 @@ struct Grammar {
 	map<string, Symb*> symb_map;
 	vector<Symb*>      symbs;
 	vector<Rule*>      rules;
-	set<Syntagma*>     to_flaten;
+	set<rule::Operator*> to_flaten;
 	Skipper*           skipper;
 	int                fresh_nonterm_index;
 
