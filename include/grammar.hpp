@@ -46,9 +46,9 @@ struct Grammar {
 
 	void add(Rule* r);
 
-	string show(bool short_ = true) const {
+	string show(bool full = true) const {
 		string ret;
-		if (!short_) {
+		if (full) {
 			ret += "Grammar " + name + "\n";
 			ret += "--------------------\n";
 			for (auto symb : symbs) ret += symb->show() + "\n";

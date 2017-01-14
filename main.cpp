@@ -2,25 +2,6 @@
 
 using namespace dynaparse;
 
-void test_1_grammar(Grammar& gr) {
-	gr
-	<< Nonterms({"exp"})
-	<< Keywords({"(", "+", ")", "*"})
-	<< Regexp("id", "[a-zA-Z]+")
-
-	<< Rule(R("exp"), Seq({R("("), R("exp"), R("+"), R("exp"), R(")")}))
-	<< Rule(R("exp"), Seq({R("("), R("exp"), R("*"), R("exp"), R(")")}))
-	<< Rule(R("exp"), Seq({R("id")}));
-}
-
-void test_2_grammar(Grammar& gr) {
-	gr
-	<< Nonterms({"A", "B", "C"})
-	<< Keywords({"a", "b", "c"})
-	<< Rule(R("A"), Iter(Alt({R("a"), R("b")})))
-	;
-}
-
 void oberon_grammar(Grammar& gr) {
 	gr
 	<< Nonterms({"Module", "ImportList", "ident", "DeclSeq", "StatementSeq", "DeclSeq", "ConstDecl", "TypeDecl", "VarDecl", "Type"})
@@ -67,19 +48,27 @@ void oberon_grammar(Grammar& gr) {
 
 void make_test(Parser& p, const string& s, const string& nt) {
 	string str = s;
+	std::cout << "trying to parse: " << str << " ... " << endl;
 	if (Expr* ex = p.parse(str, nt)) {
-		std::cout << *ex << std::endl;
-		std::cout << "OK" << std::endl;
+		std::cout << "expr: " << *ex << " - OK" << std::endl;
 		delete ex;
 	} else {
-		std::cout << "FUCK!!! : " << str << std::endl;
+		std::cout << "FAIL!!!" << std::endl;
 	}
+	std::cout << std::endl;
 }
 
 
 void test_1() {
 	Grammar gr("test_1");
-	test_1_grammar(gr);
+	gr
+	<< Nonterms({"exp"})
+	<< Keywords({"(", "+", ")", "*"})
+	<< Regexp("id", "[a-zA-Z]+")
+
+	<< Rule(R("exp"), Seq({R("("), R("exp"), R("+"), R("exp"), R(")")}))
+	<< Rule(R("exp"), Seq({R("("), R("exp"), R("*"), R("exp"), R(")")}))
+	<< Rule(R("exp"), Seq({R("id")}));
 	gr.flaten_ebnf();
 	Parser p(gr);
 	std::cout << gr.show() << std::endl;
@@ -90,13 +79,15 @@ void test_1() {
 
 void test_2() {
 	Grammar gr("test_2");
-	test_2_grammar(gr);
+	gr
+	<< Nonterms({"A"}) << Keywords({"a", "b"})
+	<< Rule(R("A"), Iter(Alt({R("a"), R("b")})));
 	std::cout << gr.show() << std::endl;
 	gr.flaten_ebnf();
 	//std::cout << gr.show() << std::endl;
 	Parser p(gr);
-	std::cout << gr.show() << std::endl;
-	std::cout << show(p) << std::endl;
+	//std::cout << gr.show() << std::endl;
+	//std::cout << show(p) << std::endl;
 
 	//make_test(p, "", "A");
 	make_test(p, "a", "A");
@@ -111,13 +102,13 @@ void test_ober() {
 	oberon_grammar(gr);
 	std::cout << gr.show() << std::endl;
 	gr.flaten_ebnf();
-	std::cout << gr.show() << std::endl;
+	//std::cout << gr.show() << std::endl;
 	Parser p(gr);
-	std::cout << gr.show() << std::endl;
+	//std::cout << gr.show() << std::endl;
 }
 
 int main(int argc, const char* argv[]) {
-	//test_1();
+	test_1();
 	test_2();
 	test_ober();
 	std::cout << "SUCCESS" << std::endl;
