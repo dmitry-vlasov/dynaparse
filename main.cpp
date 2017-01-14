@@ -46,20 +46,21 @@ void oberon_grammar(Grammar& gr) {
 	<< Rule(R("VarDecl"), Seq({R("IdentList"), R(":"), R("Type")}));
 }
 
-void make_test(Parser& p, const string& s, const string& nt) {
+bool make_test(Parser& p, const string& s, const string& nt, bool expected = true) {
 	string str = s;
-	std::cout << "trying to parse: " << str << " ... " << endl;
+	std::cout << "trying to parse: " << str << " ... ";
 	if (Expr* ex = p.parse(str, nt)) {
-		std::cout << "expr: " << *ex << " - OK" << std::endl;
+		std::cout << "expr: " << *ex << " - " << (expected ? "OK" : "FAIL") << std::endl;
 		delete ex;
+		return expected;
 	} else {
-		std::cout << "FAIL!!!" << std::endl;
+		std::cout << (expected ? "FAIL" : "expected fail - OK") << std::endl;
+		return !expected;
 	}
-	std::cout << std::endl;
 }
 
 
-void test_1() {
+bool test_1() {
 	Grammar gr("test_1");
 	gr
 	<< Nonterms({"exp"})
@@ -72,12 +73,14 @@ void test_1() {
 	gr.flaten_ebnf();
 	Parser p(gr);
 	std::cout << gr.show() << std::endl;
-	make_test(p, "(a+b)", "exp");
-	make_test(p, "   adgafgkDDFFDZ  ", "exp");
-	make_test(p, " ((  a * (xyx + bcd)) +    ( b*a))   ", "exp");
+	bool ret = true;
+	ret &= make_test(p, "(a+b)", "exp");
+	ret &= make_test(p, "   adgafgkDDFFDZ  ", "exp");
+	ret &= make_test(p, " ((  a * (xyx + bcd)) +    ( b*a))   ", "exp");
+	return ret;
 }
 
-void test_2() {
+bool test_2() {
 	Grammar gr("test_2");
 	gr
 	<< Nonterms({"A"}) << Keywords({"a", "b"})
@@ -90,14 +93,40 @@ void test_2() {
 	//std::cout << show(p) << std::endl;
 
 	//make_test(p, "", "A");
-	make_test(p, "a", "A");
-	make_test(p, "b", "A");
-	make_test(p, "ab", "A");
-	make_test(p, "aab", "A");
-	make_test(p, "bababbaaa", "A");
+	bool ret = true;
+	ret &= make_test(p, "a", "A");
+	ret &= make_test(p, "b", "A");
+	ret &= make_test(p, "ab", "A");
+	ret &= make_test(p, "aab", "A");
+	ret &= make_test(p, "bababbaaa", "A");
+	return ret;
 }
 
-void test_ober() {
+bool test_3() {
+	Grammar gr("test_3");
+	gr
+	<< Nonterms({"A"}) << Keywords({"a", "b", "c"})
+	<< Rule(R("A"), Alt({Iter(Alt({R("a"), R("b")})), R("c")}));
+	std::cout << gr.show() << std::endl;
+	gr.flaten_ebnf();
+	//std::cout << gr.show() << std::endl;
+	Parser p(gr);
+	//std::cout << gr.show() << std::endl;
+	//std::cout << show(p) << std::endl;
+
+	//make_test(p, "", "A");
+	bool ret = true;
+	ret &= make_test(p, "a", "A");
+	ret &= make_test(p, "b", "A");
+	ret &= make_test(p, "c", "A");
+	ret &= make_test(p, "ac", "A", false);
+	ret &= make_test(p, "ab", "A");
+	ret &= make_test(p, "aab", "A");
+	ret &= make_test(p, "bababbaaa", "A");
+	return ret;
+}
+
+bool test_ober() {
 	Grammar gr("oberon");
 	oberon_grammar(gr);
 	std::cout << gr.show() << std::endl;
@@ -105,13 +134,20 @@ void test_ober() {
 	//std::cout << gr.show() << std::endl;
 	Parser p(gr);
 	//std::cout << gr.show() << std::endl;
+	return true;
+}
+
+bool all_tests() {
+	bool success = true;
+	success &= test_1();
+	success &= test_2();
+	success &= test_3();
+	success &= test_ober();
+	return success;
 }
 
 int main(int argc, const char* argv[]) {
-	test_1();
-	test_2();
-	test_ober();
-	std::cout << "SUCCESS" << std::endl;
+	std::cout << (all_tests() ? "SUCCESS" : "FAIL") << std::endl;
 	return 0;
 }
 

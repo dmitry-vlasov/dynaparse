@@ -266,11 +266,7 @@ struct Iter : public UnaryOperator {
 	 *  	M -> beta M
 	 */
 	virtual bool flaten(Grammar* grammar) {
-		symb::Nonterm* nt =
-			parent ?
-			grammar->fresh_nonterm() :
-			dynamic_cast<symb::Nonterm*>(rule->left->ref);
-
+		symb::Nonterm* nt = grammar->fresh_nonterm();
 		if (parent) {
 			parent->erase(place);
 			parent->insert(place, new Ref(nt));
@@ -285,14 +281,17 @@ struct Iter : public UnaryOperator {
 			seq->check();
 			*grammar << Rule(new Ref(nt), seq);
 		} else {
-			if (Operator* op = dynamic_cast<Operator*>(operand)) {
-				rule->right = op;
-				operand->parent = nullptr;
-				op->insert(op->arity(), new Ref(nt));
-				op->check();
+			rule->right = new Ref(nt);
+			Seq* seq = nullptr;
+			if (dynamic_cast<Seq*>(operand)) {
+				seq = dynamic_cast<Seq*>(operand);
+				seq->parent = nullptr;
 			} else {
-				rule->right = new Seq({operand, new Ref(nt)});
+				seq = new Seq({operand});
 			}
+			seq->insert(seq->arity(), new Ref(nt));
+			seq->check();
+			*grammar << Rule(new Ref(nt), seq);
 		}
 		*grammar << Rule(new Ref(nt), new Ref(""));
 		if (parent) parent->check();
@@ -432,7 +431,7 @@ void Grammar::flaten_ebnf() {
 	while (!to_flaten.empty()) {
 		rule::Operator* op = *to_flaten.begin();
 /*
-		bool show_it = false;
+		bool show_it = true;
 		if (rule::Seq* seq = dynamic_cast<rule::Seq*>(op)) {
 			if (!seq->parent || !dynamic_cast<rule::Seq*>(seq->parent)) show_it = false;
 		}
