@@ -18,6 +18,47 @@ struct Node {
 	const Rule* rule;
 };
 
+vector<string> show_vect(const Node& n);
+
+vector<string> show_vect(const Tree& t) {
+	vector<string> ret;
+	for (const Node& n : t) {
+		vector<string> v = show_vect(n);
+		for (string& s : v) ret.push_back(s);
+	}
+	return ret;
+}
+
+vector<string> show_vect(const Node& n) {
+	vector<string> ret;
+	vector<string> next = show_vect(n.next);
+	if (next.size()) {
+		for (string& s : next) {
+			ret.push_back(n.symb->name + (n.rule ? "[" + n.rule->show() + "]" : "") + " " + s);
+		}
+	} else {
+		ret.push_back(n.symb->name + (n.rule ? "[" + n.rule->show() + "]" : ""));
+	}
+	return ret;
+}
+
+string show(const Node& n) {
+	string ret;
+	vector<string> vect = show_vect(n);
+	for (string& s : vect) {
+		ret += "\t" + s + "\n";
+	}
+	return ret;
+}
+
+string show(const Tree& tree) {
+	string ret;
+	for (const Node& n : tree) {
+		ret += show(n);
+	}
+	return ret;
+}
+
 inline Node createNode(map<string, Tree>& trees, const Symb* s) {
 	Node n;
 	n.symb = s;
@@ -69,8 +110,8 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch,
 	if (const Rule* r = n.top()->rule) {
 		rule = r;
 		return Action::RET;
-	} else if (ch == end)
-		return Action::BREAK;
+	} /*else if (ch == end)
+		return Action::BREAK;*/
 	else {
 		n.push(n.top()->next.begin());
 		m.push(ch);
@@ -79,7 +120,9 @@ inline Action act(stack<MapIter>& n, stack<StrIter>& m, StrIter beg, StrIter ch,
 }
 
 inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& tree, bool initial = false) {
-	if (initial || !tree.size()) return nullptr;
+	if (initial || !tree.size()) {
+		return nullptr;
+	}
 	skip(skipper, beg, end);
 
 	vector<Expr*> children;
@@ -96,9 +139,14 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 		ch = m.top();
 		skip(skipper, ch, end);
 		StrIter c = ch;
-		if (const Tree* deeper = n.top()->tree) {
+		const Node& node = *n.top();
+
+		//cout << "node: \n" << show(node) << endl;
+
+		if (const Tree* deeper = node.tree) {
+			//cout << "deeper: \n" << show(*deeper) << endl;
 			childnodes.push(n.top());
-			if (Expr* child = parse_LL(ch, end, skipper, *deeper, n.top() == tree.begin())) {
+			if (Expr* child = parse_LL(ch, end, skipper, *deeper, (n.top() == tree.begin()) && (deeper == deeper->begin()->tree))) {
 				children.push_back(child);
 				switch (act(n, m, beg, ch, end, rule)) {
 				case Action::RET  : beg = ch; return new expr::Seq(b, ch, rule, children);
@@ -108,7 +156,7 @@ inline Expr* parse_LL(StrIter& beg, StrIter end, Skipper* skipper, const Tree& t
 			} else {
 				childnodes.pop();
 			}
-		} else if (n.top()->symb->matches(ch, end)) {
+		} else if (node.symb->matches(ch, end)) {
 			children.push_back(new expr::Lexeme(c, ch));
 			switch (act(n, m, beg, ch, end, rule)) {
 			case Action::RET  : beg = ch; return new expr::Seq(b, ch, rule, children);
@@ -155,11 +203,21 @@ public :
 	}
 	Expr* parse(string& src, const string& type);
 
-	const Grammar& getGrammar() const { return grammar; }
-private :
 	Grammar& grammar;
 	map<string, parser::Tree> trees;
 };
+
+string show(const Parser& parser) {
+	string ret;
+	for (auto& p : parser.trees) {
+		if (p.second.size()) {
+			ret += "tree for " + p.first + ":\n";
+			ret += show(p.second) + "\n";
+		}
+	}
+	return ret;
+}
+
 
 Expr* Parser::parse(string& src, const string& type) {
 	StrIter beg = src.begin();

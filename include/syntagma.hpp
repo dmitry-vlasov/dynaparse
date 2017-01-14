@@ -30,7 +30,10 @@ struct Ref : public Syntagma {
 	Ref(const string& n) : Syntagma(), name(n), ref(nullptr) { }
 	Ref(Symb* r) : name(r->name), ref(r) { }
 	virtual ~ Ref() { }
-	virtual string show() const { return name.size() ? name : "<EMPTY>"; }
+	virtual string show() const {
+		if (!ref) return name.size() ? name : "<EMPTY>";
+		else      return ref->name.size() ? ref->name : "<EMPTY>";
+	}
 	virtual void complete(Grammar* grammar, Rule* rule) {
 		if (ref) return;
 		Syntagma::rule = rule;
@@ -291,7 +294,7 @@ struct Iter : public UnaryOperator {
 				rule->right = new Seq({operand, new Ref(nt)});
 			}
 		}
-		*grammar << Rule(new Ref(nt), new Seq({new Ref("")}));
+		*grammar << Rule(new Ref(nt), new Ref(""));
 		if (parent) parent->check();
 		operand = nullptr;
 		return true;
@@ -344,7 +347,7 @@ struct Opt : public UnaryOperator {
 				throw std::exception();
 			}
 		}
-		*grammar << Rule(new Ref(nt), new Seq({new Ref("")}));
+		*grammar << Rule(new Ref(nt), new Ref(""));
 		if (parent) parent->check();
 		operand = nullptr;
 		return true;
@@ -421,7 +424,7 @@ void Grammar::add(Rule* r) {
 Grammar& Grammar::operator << (Symb* s) {
 	symbs.push_back(s);
 	symb_map[s->name] = s;
-	return *this;
+ 	return *this;
 }
 
 

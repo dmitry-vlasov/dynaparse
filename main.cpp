@@ -31,7 +31,7 @@ void oberon_grammar(Grammar& gr) {
 		R("MODULE"),
 		R("ident"),
 		R(";"),
-		Opt({R("ImportList")}),
+		Opt(R("ImportList")),
 		R("DeclSeq"),
 		Opt({R("BEGIN"), R("StatementSeq")}),
 		R("END"),
@@ -42,34 +42,38 @@ void oberon_grammar(Grammar& gr) {
 		R("IMPORT"),
 		Opt({R("ident"), R(":=")}),
 		R("ident"),
-		Iter({
-			R(","),
-			Opt({R("ident"), R(":=")}),
-			R("ident")
-		}),
+		Iter({R(","), Opt({R("ident"), R(":=")}), R("ident")}),
 		R(";")
 	}))
 	<< Rule(R("DeclSeq"), Seq({
 		Iter(
-			{Alt({
-				Seq({R("CONST"), Iter({R("ConstDecl"), R(";")})
-				}),
-				Seq({R("TYPE"), Iter({R("TypeDecl"), R(";")})
-				}),
-				Seq({R("VAR"), Iter({R("VarDecl"), R(";")})
-				}),
-			})}
+			Alt({
+				Seq({R("CONST"), Iter({R("ConstDecl"), R(";")})}),
+				Seq({R("TYPE"), Iter({R("TypeDecl"), R(";")})}),
+				Seq({R("VAR"), Iter({R("VarDecl"), R(";")})}),
+			})
 		),
 		Iter(
-			{Alt({
+			Alt({
 				Seq({R("ProcDecl"), R(";")}),
 				Seq({R("ForwardDecl"), R(";")})
-			})}
+			})
 		)
 	}))
 	<< Rule(R("ConstDecl"), Seq({R("IdentDef"), R("="), R("ConstExpr")}))
 	<< Rule(R("TypeDecl"), Seq({R("IdentDef"), R("="), R("Type")}))
 	<< Rule(R("VarDecl"), Seq({R("IdentList"), R(":"), R("Type")}));
+}
+
+void make_test(Parser& p, const string& s, const string& nt) {
+	string str = s;
+	if (Expr* ex = p.parse(str, nt)) {
+		std::cout << *ex << std::endl;
+		std::cout << "OK" << std::endl;
+		delete ex;
+	} else {
+		std::cout << "FUCK!!! : " << str << std::endl;
+	}
 }
 
 
@@ -78,34 +82,10 @@ void test_1() {
 	test_1_grammar(gr);
 	gr.flaten_ebnf();
 	Parser p(gr);
-	std::cout << p.getGrammar().show() << std::endl;
-
-	string first = "(a+b)";
-	if (Expr* ex = p.parse(first, "exp")) {
-		std::cout << *ex << std::endl;
-		std::cout << "OK" << std::endl;
-		delete ex;
-	} else {
-		std::cout << "FUCK!!!" << std::endl;
-	}
-
-	string sec = "   adgafgkDDFFDZ  ";
-	if (Expr* ex = p.parse(sec, "exp")) {
-		std::cout << *ex << std::endl;
-		std::cout << "OK" << std::endl;
-		delete ex;
-	} else {
-		std::cout << "FUCK!!!" << std::endl;
-	}
-
-	string third = " ((  a * (xyx + bcd)) +    ( b*a))   ";
-	if (Expr* ex = p.parse(third, "exp")) {
-		std::cout << *ex << std::endl;
-		std::cout << "OK" << std::endl;
-		delete ex;
-	} else {
-		std::cout << "FUCK!!!" << std::endl;
-	}
+	std::cout << gr.show() << std::endl;
+	make_test(p, "(a+b)", "exp");
+	make_test(p, "   adgafgkDDFFDZ  ", "exp");
+	make_test(p, " ((  a * (xyx + bcd)) +    ( b*a))   ", "exp");
 }
 
 void test_2() {
@@ -113,9 +93,17 @@ void test_2() {
 	test_2_grammar(gr);
 	std::cout << gr.show() << std::endl;
 	gr.flaten_ebnf();
-	std::cout << gr.show() << std::endl;
+	//std::cout << gr.show() << std::endl;
 	Parser p(gr);
-	std::cout << p.getGrammar().show() << std::endl;
+	std::cout << gr.show() << std::endl;
+	std::cout << show(p) << std::endl;
+
+	//make_test(p, "", "A");
+	make_test(p, "a", "A");
+	make_test(p, "b", "A");
+	make_test(p, "ab", "A");
+	make_test(p, "aab", "A");
+	make_test(p, "bababbaaa", "A");
 }
 
 void test_ober() {
