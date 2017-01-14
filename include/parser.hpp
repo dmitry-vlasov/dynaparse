@@ -31,7 +31,7 @@ inline Node createNode(map<string, Tree>& trees, const Symb* s) {
 	return n;
 }
 
-inline Node* add(map<string, Tree>& trees, Tree& tree, vector<Syntagma*>& ex) {
+inline Node* add(map<string, Tree>& trees, Tree& tree, const vector<Syntagma*>& ex) {
 	assert(ex.size());
 	Tree* m = &tree;
 	Node* n = nullptr;
@@ -143,9 +143,13 @@ public :
 		}
 		for (Rule* rule : grammar.rules) {
 			rule::Ref* nt = dynamic_cast<rule::Ref*>(rule->left);
-			rule::NaryOperator* op = dynamic_cast<rule::NaryOperator*>(rule->right);
 			parser::Tree& tree = trees[nt->name];
-			parser::Node* n = add(trees, tree, op->operands);
+			parser::Node* n = nullptr;
+			if (rule::NaryOperator* op = dynamic_cast<rule::NaryOperator*>(rule->right)) {
+				n = add(trees, tree, op->operands);
+			} else {
+				n = add(trees, tree, {rule->right});
+			}
 			n->rule = rule;
 		}
 	}

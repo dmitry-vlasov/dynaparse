@@ -73,9 +73,6 @@ struct NaryOperator : public Operator {
 		return show_with_delim(" ");
 	}
 	virtual void complete(Grammar* grammar, Rule* rule) {
-		if (!operands.size()) {
-			std::cout << " AAAAAA " << show() << endl;
-		}
 		assert(operands.size());
 		Syntagma::rule = rule;
 		grammar->to_flaten.insert(this);
@@ -164,12 +161,7 @@ struct UnaryOperator : public Operator {
 		std::cerr << "no way to insert a vector into unary operator" << std::endl;
 		throw std::exception();
 	}
-	virtual void erase(int i) {
-		delete operand;
-		operand = nullptr;
-		//std::cerr << "no way to delete an item from unary operator" << std::endl;
-		//throw std::exception();
-	}
+	virtual void erase(int i) { operand = nullptr; }
 	Syntagma* operand;
 };
 
@@ -241,12 +233,9 @@ struct Alt : public NaryOperator {
 		for (Syntagma* s : operands) {
 			s->parent = nullptr;
 			s->check();
-
-			cout << s->show() << endl;
-
 			*grammar << Rule(new Ref(nt), s);
 		}
-		parent->check();
+		if (parent) parent->check();
 		operands.clear();
 		return true;
 	}
@@ -293,18 +282,17 @@ struct Iter : public UnaryOperator {
 			seq->check();
 			*grammar << Rule(new Ref(nt), seq);
 		} else {
-			rule->right = operand;
-			operand->parent = nullptr;
 			if (Operator* op = dynamic_cast<Operator*>(operand)) {
+				rule->right = op;
+				operand->parent = nullptr;
 				op->insert(op->arity(), new Ref(nt));
 				op->check();
 			} else {
-				std::cerr << "right side of a rule cannot be ref" << std::endl;
-				throw std::exception();
+				rule->right = new Seq({operand, new Ref(nt)});
 			}
 		}
 		*grammar << Rule(new Ref(nt), new Seq({new Ref("")}));
-		parent->check();
+		if (parent) parent->check();
 		operand = nullptr;
 		return true;
 	}
@@ -357,7 +345,7 @@ struct Opt : public UnaryOperator {
 			}
 		}
 		*grammar << Rule(new Ref(nt), new Seq({new Ref("")}));
-		parent->check();
+		if (parent) parent->check();
 		operand = nullptr;
 		return true;
 	}
@@ -387,7 +375,7 @@ void Syntagma::check() const {
 		if (parent->get(place) != this) {
 			std::cout << parent->show() << std::endl;
 			std::cout << rule->show() << std::endl;
-			std::cout << "AAA" << std::endl;
+			std::cout << "ERROR" << std::endl;
 		}
 		assert(parent->get(place) == this);
 	}
@@ -410,8 +398,7 @@ Rule::Rule(Syntagma* l, Syntagma* r) :
 	}
 }
 
-Rule* Rule::clone() const { return new Rule(left->clone(), right->clone());
-}
+Rule* Rule::clone() const { return new Rule(left->clone(), right->clone()); }
 
 Grammar::Grammar(const string& n) : name(n), symb_map(), symbs(), rules(), to_flaten(),
 	skipper([](char c)->bool {return c <= ' '; }), fresh_nonterm_index(0) {
@@ -441,23 +428,24 @@ Grammar& Grammar::operator << (Symb* s) {
 void Grammar::flaten_ebnf() {
 	while (!to_flaten.empty()) {
 		rule::Operator* op = *to_flaten.begin();
+/*
+		bool show_it = false;
+		if (rule::Seq* seq = dynamic_cast<rule::Seq*>(op)) {
+			if (!seq->parent || !dynamic_cast<rule::Seq*>(seq->parent)) show_it = false;
+		}
 
-		//bool show_it = false;
-		//if (rule::Seq* seq = dynamic_cast<rule::Seq*>(s)) {
-		//	if (!seq->parent || !dynamic_cast<rule::Seq*>(seq->parent)) show_it = false;
-		//}
-
-		/*if (show_it) {
-			std::cout << "TO FLATEN: " << s->show() << std::endl;
-			std::cout << "IN RULE: " << s->rule->show() << std::endl;
-		}*/
-
+		if (show_it) {
+			std::cout << "TO FLATEN: " << op->show() << std::endl;
+			std::cout << "IN RULE: " << op->rule->show() << std::endl;
+		}
+*/
 		to_flaten.erase(to_flaten.begin());
 		if (op->flaten(this)) delete op;
-
-		//if (show_it) {
-		//	std::cout << "AFTER: " << std::endl << show() << std::endl;
-		//}
+/*
+		if (show_it) {
+			std::cout << "AFTER: " << std::endl << show() << std::endl;
+		}
+*/
 	}
 }
 

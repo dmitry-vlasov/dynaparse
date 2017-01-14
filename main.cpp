@@ -2,7 +2,7 @@
 
 using namespace dynaparse;
 
-void test_grammar(Grammar& gr) {
+void test_1_grammar(Grammar& gr) {
 	gr
 	<< Nonterms({"exp"})
 	<< Keywords({"(", "+", ")", "*"})
@@ -11,6 +11,14 @@ void test_grammar(Grammar& gr) {
 	<< Rule(R("exp"), Seq({R("("), R("exp"), R("+"), R("exp"), R(")")}))
 	<< Rule(R("exp"), Seq({R("("), R("exp"), R("*"), R("exp"), R(")")}))
 	<< Rule(R("exp"), Seq({R("id")}));
+}
+
+void test_2_grammar(Grammar& gr) {
+	gr
+	<< Nonterms({"A", "B", "C"})
+	<< Keywords({"a", "b", "c"})
+	<< Rule(R("A"), Iter(Alt({R("a"), R("b")})))
+	;
 }
 
 void oberon_grammar(Grammar& gr) {
@@ -66,8 +74,8 @@ void oberon_grammar(Grammar& gr) {
 
 
 void test_1() {
-	Grammar gr("test");
-	test_grammar(gr);
+	Grammar gr("test_1");
+	test_1_grammar(gr);
 	gr.flaten_ebnf();
 	Parser p(gr);
 	std::cout << p.getGrammar().show() << std::endl;
@@ -100,6 +108,16 @@ void test_1() {
 	}
 }
 
+void test_2() {
+	Grammar gr("test_2");
+	test_2_grammar(gr);
+	std::cout << gr.show() << std::endl;
+	gr.flaten_ebnf();
+	std::cout << gr.show() << std::endl;
+	Parser p(gr);
+	std::cout << p.getGrammar().show() << std::endl;
+}
+
 void test_ober() {
 	Grammar gr("oberon");
 	oberon_grammar(gr);
@@ -111,7 +129,8 @@ void test_ober() {
 }
 
 int main(int argc, const char* argv[]) {
-	test_1();
+	//test_1();
+	test_2();
 	test_ober();
 	std::cout << "SUCCESS" << std::endl;
 	return 0;
